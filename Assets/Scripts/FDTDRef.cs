@@ -20,13 +20,13 @@ namespace GPUVerb
         static extern void PlaneverbGetGridResponse(int gridId, float listenerX, float listenerZ, IntPtr result);
 
         Cell[,,] m_grid;
-        int m_NumSamples;
+        int m_numSamples;
         int m_id;
-        public FDTDRef(Vector2Int gridSize, PlaneverbResolution res) : base(gridSize, res)
+        public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
             m_id = PlaneverbCreateGrid(gridSize.x, gridSize.y, (int)res);
-            m_NumSamples = PlaneverbGetGridResponseLength(m_id);
-            m_grid = new Cell[gridSize.x, gridSize.y, m_NumSamples];
+            m_numSamples = PlaneverbGetGridResponseLength(m_id);
+            m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, m_numSamples];
         }
         ~FDTDRef()
         {
@@ -45,10 +45,19 @@ namespace GPUVerb
 
         public override IEnumerable<Cell> GetResponse(Vector2Int gridPos)
         {
-            for(int i=0; i<m_NumSamples; ++i)
+            if(gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
+            {
+                yield break;
+            }
+            for(int i=0; i<m_numSamples; ++i)
             {
                 yield return m_grid[gridPos.x, gridPos.y, i];
             }
+        }
+
+        public override int GetResponseLength()
+        {
+            return PlaneverbGetGridResponseLength(m_id);
         }
     }
 }

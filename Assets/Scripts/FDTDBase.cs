@@ -29,9 +29,36 @@ namespace GPUVerb
 
     public abstract class FDTDBase
     {
-        public FDTDBase(Vector2Int gridSize, PlaneverbResolution res) { }
+        const float k_soundSpeed = 343.21f;
+        const float k_pointsPerWaveLength = 3.5f;
+
+        protected Vector2Int m_gridSizeInCells;
+        protected float m_cellSize;
+        protected float m_dt;
+        protected uint m_samplingRate;
+
+        public FDTDBase(Vector2 gridSize, PlaneverbResolution res) 
+        {
+            float minWavelength = k_soundSpeed / (float)res;
+            m_cellSize = minWavelength / k_pointsPerWaveLength;
+            m_dt = m_cellSize / (k_soundSpeed * 1.5f);
+            m_samplingRate = (uint)(1.0f / m_dt);
+
+            m_gridSizeInCells = new Vector2Int(
+                    Mathf.CeilToInt(gridSize.x / m_cellSize),
+                    Mathf.CeilToInt(gridSize.y / m_cellSize)
+                );
+        }
         private FDTDBase() { }
+        public abstract int GetResponseLength();
         public abstract void GenerateResponse(Vector3 listener);
         public abstract IEnumerable<Cell> GetResponse(Vector2Int gridPos);
+        public Vector2Int ToGridPos(Vector2 pos)
+        {
+            return new Vector2Int(
+                Mathf.FloorToInt(pos.x / m_cellSize),
+                Mathf.FloorToInt(pos.y / m_cellSize)
+            );
+        }
     }
 }
