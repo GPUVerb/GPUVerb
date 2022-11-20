@@ -53,6 +53,9 @@ namespace GPUVerb
         public abstract int GetResponseLength();
         public abstract void GenerateResponse(Vector3 listener);
         public abstract IEnumerable<Cell> GetResponse(Vector2Int gridPos);
+        public abstract void AddGeometry(Bounds bounds);
+        
+        
         public Vector2Int ToGridPos(Vector2 pos)
         {
             return new Vector2Int(

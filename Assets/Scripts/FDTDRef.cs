@@ -18,6 +18,8 @@ namespace GPUVerb
         static extern int PlaneverbGetGridResponseLength(int id);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbGetGridResponse(int gridId, float listenerX, float listenerZ, IntPtr result);
+        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        static extern void PlaneverbAddAABB(int gridId, PlaneVerbAABB aabb);
 
         Cell[,,] m_grid;
         int m_numSamples;
@@ -58,6 +60,11 @@ namespace GPUVerb
         public override int GetResponseLength()
         {
             return PlaneverbGetGridResponseLength(m_id);
+        }
+
+        public override void AddGeometry(Bounds bounds)
+        {
+            PlaneverbAddAABB(m_id, (PlaneVerbAABB)bounds);
         }
     }
 }

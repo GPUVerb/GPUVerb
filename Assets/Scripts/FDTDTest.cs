@@ -9,6 +9,10 @@ namespace GPUVerb
 {
     public class FDTDTest : MonoBehaviour
     {
+        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        static extern float PlaneverbGetResponsePressure(int gridId, float x, float z, IntPtr result);
+
+
         [SerializeField]
         float m_cubeSize = 0.1f;
         [SerializeField]
@@ -17,12 +21,11 @@ namespace GPUVerb
         float m_motionScale = 50;
         [SerializeField]
         float m_simTime = 4f;
-        [SerializeField]
-        Vector2 m_minCorner = new Vector2(0, 0);
-        [SerializeField]
-        Vector2 m_maxCorner = new Vector2(9, 9);
+        
         [SerializeField]
         Transform m_listener;
+
+        bool m_simFinished = true;
 
         class Info
         {
@@ -32,19 +35,17 @@ namespace GPUVerb
         }
 
         List<Info> m_cubeInfos = new List<Info>();
-        FDTDBase m_solver;
 
 
         // Start is called before the first frame update
         void Start()
         {
-            m_solver = new FDTDRef(
-                new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)), 
-                PlaneverbResolution.LowResolution);
+            Vector2 minCorner = GPUVerbContext.Instance.MinCorner;
+            Vector2 maxCorner = GPUVerbContext.Instance.MaxCorner;
 
-            for (float x = m_minCorner.x; x <= m_maxCorner.x; x += m_cubeSize)
+            for (float x = minCorner.x; x <= maxCorner.x; x += m_cubeSize)
             {
-                for (float y = m_minCorner.y; y <= m_maxCorner.y; y += m_cubeSize)
+                for (float y = minCorner.y; y <= maxCorner.y; y += m_cubeSize)
                 {
                     GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     obj.transform.position = new Vector3(x, m_baseHeight, y);
@@ -52,28 +53,56 @@ namespace GPUVerb
                     
                     Destroy(obj.GetComponent<Collider>());
 
-                    Info info = new Info();
-                    info.ins = obj;
-                    info.pos = new Vector2(x, y);
+                    Info info = new Info
+                    {
+                        ins = obj,
+                        pos = new Vector2(x, y)
+                    };
 
                     m_cubeInfos.Add(info);
                 }
             }
         }
 
-        IEnumerator Simulate()
+
+        float[][] pressures;
+        void GetData()
         {
-            m_solver.GenerateResponse(m_listener.position);
+            FDTDBase solver = GPUVerbContext.Instance.FDTDSolver;
+
+            solver.GenerateResponse(m_listener.position);
+
             foreach (Info info in m_cubeInfos)
             {
-                info.cur = m_solver.GetResponse(m_solver.ToGridPos(info.pos)).GetEnumerator();
+                info.cur = solver.GetResponse(solver.ToGridPos(info.pos)).GetEnumerator();
             }
+            
+            /*
+            pressures = new float[m_cubeInfos.Count][];
+            for(int i=0; i<m_cubeInfos.Count; ++i)
+            {
+                pressures[i] = new float[m_solver.GetResponseLength()];
+                unsafe
+                {
+                    fixed(float* ptr = pressures[i])
+                    {
+                        PlaneverbGetResponsePressure(0, m_cubeInfos[i].pos.x, m_cubeInfos[i].pos.y, (IntPtr)ptr);
+                    }
+                }
+            }
+            */
+        }
 
-            int numSamples = m_solver.GetResponseLength();
+        IEnumerator Simulate()
+        {
+            m_simFinished = false;
+            GetData();
+
+            int numSamples = GPUVerbContext.Instance.FDTDSolver.GetResponseLength();
             int lastSample = -1;
             for(float curTime = 0; curTime <= m_simTime; curTime += Time.deltaTime)
             {
-                int sample = Mathf.FloorToInt(curTime / m_simTime);
+                int sample = Mathf.FloorToInt(curTime / m_simTime * numSamples);
                 if(sample >= numSamples)
                 {
                     break;
@@ -87,24 +116,30 @@ namespace GPUVerb
                     }
 
                     Cell data = info.cur.Current;
-                    float h = m_baseHeight + m_motionScale * data.pressure;
+                    float pr = data.pressure;
+                    float h = m_baseHeight + m_motionScale * pr;
                     info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
-
-                    if (!Mathf.Approximately(h, m_baseHeight))
-                        Debug.Break();
                 }
 
                 lastSample = sample;
                 yield return new WaitForEndOfFrame();
             }
+
+            m_simFinished = true;
         }
 
         private void OnGUI()
         {
-            if(GUILayout.Button("Play"))
+            if(m_simFinished)
             {
-                StopAllCoroutines();
-                StartCoroutine(Simulate());
+                if (GUILayout.Button("Play"))
+                {
+                    StopAllCoroutines();
+                    StartCoroutine(Simulate());
+                }
+            } else
+            {
+                GUILayout.Label("Simulating...");
             }
         }
     }
