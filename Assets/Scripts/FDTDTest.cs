@@ -12,13 +12,14 @@ namespace GPUVerb
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern float PlaneverbGetResponsePressure(int gridId, float x, float z, IntPtr result);
 
-
+        [SerializeField]
+        GameObject m_cubePrefab = null;
         [SerializeField]
         float m_cubeSize = 0.1f;
         [SerializeField]
-        float m_baseHeight = 1;
+        float m_baseHeight = 0;
         [SerializeField]
-        float m_motionScale = 50;
+        float m_motionScale = 10;
         [SerializeField]
         float m_simTime = 4f;
         
@@ -47,11 +48,18 @@ namespace GPUVerb
             {
                 for (float y = minCorner.y; y <= maxCorner.y; y += m_cubeSize)
                 {
-                    GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    GameObject obj;
+                    if(m_cubePrefab == null)
+                    {
+                        obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        Destroy(obj.GetComponent<Collider>());
+                    }
+                    else
+                    {
+                        obj = Instantiate(m_cubePrefab);
+                    }
                     obj.transform.position = new Vector3(x, m_baseHeight, y);
                     obj.transform.localScale = Vector3.one * m_cubeSize;
-                    
-                    Destroy(obj.GetComponent<Collider>());
 
                     Info info = new Info
                     {
@@ -64,8 +72,6 @@ namespace GPUVerb
             }
         }
 
-
-        float[][] pressures;
         void GetData()
         {
             FDTDBase solver = GPUVerbContext.Instance.FDTDSolver;
@@ -76,21 +82,6 @@ namespace GPUVerb
             {
                 info.cur = solver.GetResponse(solver.ToGridPos(info.pos)).GetEnumerator();
             }
-            
-            /*
-            pressures = new float[m_cubeInfos.Count][];
-            for(int i=0; i<m_cubeInfos.Count; ++i)
-            {
-                pressures[i] = new float[m_solver.GetResponseLength()];
-                unsafe
-                {
-                    fixed(float* ptr = pressures[i])
-                    {
-                        PlaneverbGetResponsePressure(0, m_cubeInfos[i].pos.x, m_cubeInfos[i].pos.y, (IntPtr)ptr);
-                    }
-                }
-            }
-            */
         }
 
         IEnumerator Simulate()
