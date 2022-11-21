@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace GPUVerb
 {
@@ -20,15 +21,26 @@ namespace GPUVerb
         static extern void PlaneverbGetGridResponse(int gridId, float listenerX, float listenerZ, IntPtr result);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbAddAABB(int gridId, PlaneVerbAABB aabb);
+        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        static extern void PlaneverbUpdateAABB(int gridId, PlaneVerbAABB oldVal, PlaneVerbAABB newVal);
+        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        static extern void PlaneverbRemoveAABB(int gridId, PlaneVerbAABB aabb);
+
 
         Cell[,,] m_grid;
         int m_numSamples;
         int m_id;
+
+        SortedDictionary<int, Bounds> m_geometries;
+        int m_nextGeoID;
+
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
             m_id = PlaneverbCreateGrid(gridSize.x, gridSize.y, (int)res);
             m_numSamples = PlaneverbGetGridResponseLength(m_id);
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, m_numSamples];
+            m_geometries = new SortedDictionary<int, Bounds>();
+            m_nextGeoID = 0;
         }
         ~FDTDRef()
         {
@@ -36,6 +48,7 @@ namespace GPUVerb
         }
         public override void GenerateResponse(Vector3 listener)
         {
+            Profiler.BeginSample("FDTDRef.GenerateResponse");
             unsafe
             {
                 fixed(Cell* ptr = m_grid)
@@ -43,6 +56,7 @@ namespace GPUVerb
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
                 }
             }
+            Profiler.EndSample();
         }
 
         public override IEnumerable<Cell> GetResponse(Vector2Int gridPos)
@@ -62,9 +76,27 @@ namespace GPUVerb
             return PlaneverbGetGridResponseLength(m_id);
         }
 
-        public override void AddGeometry(Bounds bounds)
+        public override int AddGeometry(Bounds bounds)
         {
+            m_geometries.Add(m_nextGeoID, bounds);
             PlaneverbAddAABB(m_id, (PlaneVerbAABB)bounds);
+            return m_nextGeoID ++;
+        }
+
+        public override void UpdateGeometry(int id, Bounds geom)
+        {
+            if (!m_geometries.ContainsKey(id))
+                return;
+            PlaneverbUpdateAABB(m_id, (PlaneVerbAABB)m_geometries[id], (PlaneVerbAABB)geom);
+            m_geometries[id] = geom;
+        }
+
+        public override void RemoveGeometry(int id)
+        {
+            if (!m_geometries.ContainsKey(id))
+                return;
+            PlaneverbRemoveAABB(m_id, (PlaneVerbAABB)m_geometries[id]);
+            m_geometries.Remove(id);
         }
     }
 }

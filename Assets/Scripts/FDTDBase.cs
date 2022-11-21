@@ -26,9 +26,9 @@ namespace GPUVerb
             this.by = by;
         }
     }
-
     public abstract class FDTDBase
     {
+
         const float k_soundSpeed = 343.21f;
         const float k_pointsPerWaveLength = 3.5f;
 
@@ -53,8 +53,9 @@ namespace GPUVerb
         public abstract int GetResponseLength();
         public abstract void GenerateResponse(Vector3 listener);
         public abstract IEnumerable<Cell> GetResponse(Vector2Int gridPos);
-        public abstract void AddGeometry(Bounds bounds);
-        
+        public abstract int AddGeometry(Bounds geom);
+        public abstract void UpdateGeometry(int id, Bounds geom);
+        public abstract void RemoveGeometry(int id);
         
         public Vector2Int ToGridPos(Vector2 pos)
         {

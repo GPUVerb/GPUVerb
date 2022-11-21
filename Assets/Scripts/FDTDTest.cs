@@ -133,5 +133,13 @@ namespace GPUVerb
                 GUILayout.Label("Simulating...");
             }
         }
+
+        private void OnDrawGizmos()
+        {
+            if(m_listener != null)
+            {
+                Gizmos.DrawWireSphere(m_listener.position, 0.2f);
+            }
+        }
     }
 }

@@ -12,11 +12,6 @@ namespace GPUVerb
             throw new System.NotImplementedException();
         }
 
-        public override void AddGeometry(Bounds bounds)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public override void GenerateResponse(Vector3 listener)
         {
             throw new System.NotImplementedException();
@@ -27,6 +22,20 @@ namespace GPUVerb
         }
 
         public override int GetResponseLength()
+        {
+            throw new System.NotImplementedException();
+        }
+        public override int AddGeometry(Bounds bounds)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void RemoveGeometry(int id)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void UpdateGeometry(int id, Bounds geom)
         {
             throw new System.NotImplementedException();
         }
