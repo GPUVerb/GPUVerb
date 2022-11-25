@@ -24,7 +24,7 @@ namespace GPUVerb
         float m_simTime = 4f;
         
         [SerializeField]
-        Transform m_listener;
+        Transform m_listener = null;
 
         bool m_simFinished = true;
 

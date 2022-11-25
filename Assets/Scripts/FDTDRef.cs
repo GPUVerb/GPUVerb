@@ -7,7 +7,7 @@ using UnityEngine.Profiling;
 
 namespace GPUVerb
 {
-    // TODO: call into the planeverb DLL
+    // DONE: call into the planeverb DLL
     // this is a wrapper for the planeverb FDTD to test our FDTD's correctness
     public class FDTDRef : FDTDBase
     {
@@ -49,6 +49,7 @@ namespace GPUVerb
         public override void GenerateResponse(Vector3 listener)
         {
             Profiler.BeginSample("FDTDRef.GenerateResponse");
+
             unsafe
             {
                 fixed(Cell* ptr = m_grid)
@@ -56,6 +57,7 @@ namespace GPUVerb
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
                 }
             }
+
             Profiler.EndSample();
         }
 

@@ -1,0 +1,89 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel KernFDTD
+#pragma kernel KernZero
+#pragma kernel KernTest
+
+
+struct Cell {
+    float pressure;
+    float velX;
+    float velY;
+    int b;
+};
+
+
+RWStructuredBuffer<Cell> gridOut;
+StructuredBuffer<Cell> gridIn;
+int2 gridDim; // (x dim, y dim)
+
+
+#define IDX(i,j) ((i) * gridDim[0] + (j))
+#define VALID(i,j) ((i) < gridDim[1] && (j) < gridDim[0])
+
+
+int GetB(int i, int j) {
+    return gridIn[IDX(i,j)].b & 0xffff;
+}
+int GetBy(int i, int j) {
+    return gridIn[IDX(i, j)].b >> 16 & 0xffff;
+}
+
+void WriteB(int val, int i, int j) {
+    gridOut[IDX(i,j)].b &= 0xffff0000; // little endian, so it's not 0x0000ffff
+    gridOut[IDX(i,j)].b |= val & 0xffff;
+}
+void WriteBy(int val, int i, int j) {
+    gridOut[IDX(i,j)].b &= 0x0000ffff;
+    gridOut[IDX(i,j)].b |= (val & 0xffff) << 16;
+}
+
+[numthreads(8, 8, 1)]
+void KernTest(uint3 id : SV_DispatchThreadID) {
+    const int i = id.y;
+    const int j = id.x;
+
+    if (!VALID(i, j)) {
+        return;
+    }
+    WriteB(GetB(i, j) + (i + 1) * (j + 1), i, j);
+}
+
+void KernZeroAll(uint3 id : SV_DispatchThreadID) {
+	
+}
+
+[numthreads(8, 8, 1)]
+void KernZero(uint3 id : SV_DispatchThreadID) {
+    const int i = id.y;
+    const int j = id.x;
+
+    if (!VALID(i,j)) {
+        return;
+    }
+
+    gridOut[IDX(i, j)].pressure = 0;
+    gridOut[IDX(i, j)].velX = 0;
+    gridOut[IDX(i, j)].velY = 0;
+}
+
+[numthreads(8, 8, 1)]
+void KernFDTD(
+    uint3 groupID : SV_GroupID, 
+    uint3 groupThreadID : SV_GroupThreadID,
+    uint groupIndex : SV_GroupIndex,
+    uint3 id : SV_DispatchThreadID)
+{
+    const int i = id.y;
+    const int j = id.x;
+
+    if (!VALID(i, j)) {
+        return;
+    }
+
+    gridOut[IDX(i, j)].pressure;
+
+    Cell c0 = gridIn[IDX(i, j)];
+    Cell c1 = gridIn[IDX(i + 1, j)];
+    Cell c2 = gridIn[IDX(i, j + 1)];
+    float divergence = (c1.velX - c0.velX) + (c2.velY - c0.velY);
+}

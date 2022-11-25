@@ -609,6 +609,8 @@ GameObject:
   - component: {fileID: 1861659887}
   - component: {fileID: 1861659888}
   - component: {fileID: 1861659889}
+  - component: {fileID: 1861659890}
+  - component: {fileID: 1861659891}
   m_Layer: 0
   m_Name: Test
   m_TagString: Untagged
@@ -638,7 +640,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1861659886}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1dd68a2c8b90c0746bab55b674621230, type: 3}
   m_Name: 
@@ -647,7 +649,7 @@ MonoBehaviour:
   m_cubeSize: 0.1
   m_baseHeight: 0
   m_motionScale: 10
-  m_simTime: 5
+  m_simTime: 15
   m_listener: {fileID: 494158170}
 --- !u!114 &1861659889
 MonoBehaviour:
@@ -661,3 +663,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9694e3c4297e0f409d3a72956bebce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1861659890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1861659886}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 235341eaace52844ebc8bb1e55d1f599, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_gridMaxCorner: {x: 100, y: 100}
+--- !u!114 &1861659891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1861659886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5b7ab6adae36b946b96a7b53bf3223a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_bufferSize: 10
+  m_tableSize: {x: 7, y: 11}
+  m_shader: {fileID: 7200000, guid: dc3ecf3ef95797b47a75715d17dd08f8, type: 3}
