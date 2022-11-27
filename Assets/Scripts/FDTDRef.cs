@@ -31,8 +31,6 @@ namespace GPUVerb
         int m_numSamples;
         int m_id;
 
-        SortedDictionary<int, Bounds> m_geometries;
-        int m_nextGeoID;
 
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -40,7 +38,6 @@ namespace GPUVerb
             m_numSamples = PlaneverbGetGridResponseLength(m_id);
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, m_numSamples];
             m_geometries = new SortedDictionary<int, Bounds>();
-            m_nextGeoID = 0;
         }
         ~FDTDRef()
         {
@@ -78,27 +75,23 @@ namespace GPUVerb
             return PlaneverbGetGridResponseLength(m_id);
         }
 
-        public override int AddGeometry(Bounds bounds)
+        public override int AddGeometry(Bounds geom)
         {
-            m_geometries.Add(m_nextGeoID, bounds);
-            PlaneverbAddAABB(m_id, (PlaneVerbAABB)bounds);
-            return m_nextGeoID ++;
+            int ret = base.AddGeometry(geom);
+            PlaneverbAddAABB(m_id, (PlaneVerbAABB)geom);
+            return ret;
         }
 
         public override void UpdateGeometry(int id, Bounds geom)
         {
-            if (!m_geometries.ContainsKey(id))
-                return;
+            base.UpdateGeometry(id, geom);
             PlaneverbUpdateAABB(m_id, (PlaneVerbAABB)m_geometries[id], (PlaneVerbAABB)geom);
-            m_geometries[id] = geom;
         }
 
         public override void RemoveGeometry(int id)
         {
-            if (!m_geometries.ContainsKey(id))
-                return;
+            base.RemoveGeometry(id);
             PlaneverbRemoveAABB(m_id, (PlaneVerbAABB)m_geometries[id]);
-            m_geometries.Remove(id);
         }
     }
 }

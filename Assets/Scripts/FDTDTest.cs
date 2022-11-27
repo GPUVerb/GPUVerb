@@ -9,9 +9,6 @@ namespace GPUVerb
 {
     public class FDTDTest : MonoBehaviour
     {
-        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern float PlaneverbGetResponsePressure(int gridId, float x, float z, IntPtr result);
-
         [SerializeField]
         GameObject m_cubePrefab = null;
         [SerializeField]
@@ -38,8 +35,14 @@ namespace GPUVerb
         List<Info> m_cubeInfos = new List<Info>();
 
 
+        private void Awake()
+        {
+            FDTDUnitTest();
+        }
+
+
         // Start is called before the first frame update
-        void Start()
+        private void Start()
         {
             Vector2 minCorner = GPUVerbContext.Instance.MinCorner;
             Vector2 maxCorner = GPUVerbContext.Instance.MaxCorner;
@@ -140,6 +143,67 @@ namespace GPUVerb
             {
                 Gizmos.DrawWireSphere(m_listener.position, 0.2f);
             }
+        }
+
+
+        private void FDTDUnitTest()
+        {
+            bool IsEqual(Cell[,,] arr1, Cell[,,] arr2)
+            {
+                for(int i=0; i<arr1.GetLength(0); ++i)
+                {
+                    for(int j=0; j<arr1.GetLength(1); ++j)
+                    {
+                        for(int k=0; k<arr1.GetLength(2); ++k)
+                        {
+                            if(!arr1[i,j,k].Equals(arr2[i,j,k]))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+
+            Vector2 gridSize = new Vector2(5, 5);
+            FDTDBase correct = new FDTDRef(gridSize, PlaneverbResolution.LowResolution);
+            FDTDBase fdtd = new FDTD(gridSize, PlaneverbResolution.LowResolution);
+
+            Vector2Int gridSizeInCells = correct.GetGridSizeInCells();
+            int numSamples = correct.GetResponseLength();
+
+
+            Debug.Assert(gridSizeInCells == fdtd.GetGridSizeInCells());
+            Debug.Assert(numSamples == fdtd.GetResponseLength());
+
+            Cell[,,] c1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
+            Cell[,,] c2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
+
+
+            correct.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
+            fdtd.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
+
+            for (int x = 0; x < gridSizeInCells.x; ++x)
+            {
+                for(int y = 0; y < gridSizeInCells.y; ++y)
+                {
+                    int z = 0;
+                    foreach(Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                    {
+                        c1[x, y, z] = c;
+                        ++ z;
+                    }
+                    z = 0;
+                    foreach (Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                    {
+                        c2[x, y, z] = c;
+                        ++z;
+                    }
+                }
+            }
+
+            Debug.Assert(IsEqual(c1, c2));
         }
     }
 }

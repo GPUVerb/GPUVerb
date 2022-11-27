@@ -29,24 +29,12 @@ namespace GPUVerb
                 for (int j = 0; j < m_result.GetLength(1); ++j)
                 {
                     Cell cell = m_result[i, j];
-                    sb.Append(cell.b);
-                    sb.Append(' ');
-                    /*                    sb.Append('{');
-                                        sb.Append("pr = ");
-                                        sb.Append(cell.pressure);
-                                        sb.Append(" vx = ");
-                                        sb.Append(cell.velX);
-                                        sb.Append(" b = ");
-                                        sb.Append(cell.b);
-                                        sb.Append(" by = ");
-                                        sb.Append(cell.by);
-                                        sb.Append('}');*/
+                    sb.Append(cell);
                 }
                 sb.AppendLine();
             }
             Debug.Log(sb.ToString());
         }
-
 
         // Start is called before the first frame update
         void Start()
@@ -87,7 +75,8 @@ namespace GPUVerb
 
         private void OnDestroy()
         {
-            m_InputBuf.Dispose();
+            if(m_InputBuf != null)
+                m_InputBuf.Dispose();
         }
     }
 }
