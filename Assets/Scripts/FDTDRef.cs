@@ -39,10 +39,6 @@ namespace GPUVerb
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, m_numSamples];
             m_geometries = new SortedDictionary<int, Bounds>();
         }
-        ~FDTDRef()
-        {
-            PlaneverbDestroyGrid(m_id);
-        }
         public override void GenerateResponse(Vector3 listener)
         {
             Profiler.BeginSample("FDTDRef.GenerateResponse");
@@ -77,21 +73,25 @@ namespace GPUVerb
 
         public override int AddGeometry(Bounds geom)
         {
-            int ret = base.AddGeometry(geom);
             PlaneverbAddAABB(m_id, (PlaneVerbAABB)geom);
-            return ret;
+            return base.AddGeometry(geom);
         }
 
         public override void UpdateGeometry(int id, Bounds geom)
         {
-            base.UpdateGeometry(id, geom);
             PlaneverbUpdateAABB(m_id, (PlaneVerbAABB)m_geometries[id], (PlaneVerbAABB)geom);
+            base.UpdateGeometry(id, geom);
         }
 
         public override void RemoveGeometry(int id)
         {
-            base.RemoveGeometry(id);
             PlaneverbRemoveAABB(m_id, (PlaneVerbAABB)m_geometries[id]);
+            base.RemoveGeometry(id);
+        }
+
+        public override void Dispose()
+        {
+            PlaneverbDestroyGrid(m_id);
         }
     }
 }

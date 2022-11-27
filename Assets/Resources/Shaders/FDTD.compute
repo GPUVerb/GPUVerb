@@ -2,7 +2,8 @@
 #pragma kernel KernFDTD
 #pragma kernel KernZero
 #pragma kernel KernTest
-
+#pragma kernel KernAddBounds
+#pragma kernel KernRemoveBounds
 
 struct Cell {
 	float pressure;
@@ -16,9 +17,13 @@ struct BoundaryInfo {
 
 // used by FDTD
 RWStructuredBuffer<BoundaryInfo> boundaries;
-RWStructuredBuffer<Cell>       gridOut; 
+RWStructuredBuffer<Cell>       grid;
+RWStructuredBuffer<Cell>       gridOut;
 StructuredBuffer<Cell>         gridIn;
-int2                           gridDim; // (x dim, y dim)
+StructuredBuffer<float>        gaussianPulse;
+float2                         listenerPos;
+int3                           gridDim; // (x dim, y dim, time dim)
+int                            curTime;
 float                          courant;
 
 // used by geometry updates
@@ -77,14 +82,12 @@ void KernZero(uint3 id : SV_DispatchThreadID) {
 
 // required binding: updateDim, gridDim, gridOut, boundaries
 [numthreads(8, 8, 1)]
-void KernAddBounds(uint3 id : SV_DispatchThreadID) {
-	if (id.x >= updateDim[2] - updateDim[0] || id.y >= updateDim[3] - updateDim[1]) {
-		return;
-	}
-
+void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
 	const int j = id.x;
-
+	if (j >= updateDim[2] - updateDim[0] || i >= updateDim[3] - updateDim[1]) {
+		return;
+	}
 
 	boundaries[IDX(i + updateDim[1], j + updateDim[0], gridDim)].absorption = 0;
 	if(i + updateDim[1] == gridDim[1] - 1 && j + updateDim[0] == gridDim[0] - 1) {
@@ -99,8 +102,23 @@ void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	}
 }
 
+// required binding: updateDim, gridDim, gridOut, boundaries
+[numthreads(8, 8, 1)]
+void KernAddBounds(uint3 id : SV_DispatchThreadID) {
+	const int i = id.y;
+	const int j = id.x;
+	if (j >= updateDim[2] - updateDim[0] || i >= updateDim[3] - updateDim[1]) {
+		return;
+	}
+
+	boundaries[IDX(i + updateDim[1], j + updateDim[0], gridDim)].absorption = 0;
+	WriteB(0, i + updateDim[1], j + updateDim[0]);
+	WriteBy(0, i + updateDim[1], j + updateDim[0]);
+}
+
 // A single iteration of FDTD solver
-// required binding: gridDim, gridIn, gridOut, boundaries, courant
+// required binding: 
+//     gridDim, curTime, grid, gridIn, gridOut, boundaries, courant, listenerPos, gaussianPulse
 // reads from gridIn and writes to gridOut
 [numthreads(8, 8, 1)]
 void KernFDTD(
@@ -173,10 +191,21 @@ void KernFDTD(
 	}
 
 	// top and bottom absorption
-	gridOut[IDX(i, 0, gridDim)].velX              = -gridOut[IDX(i, 0, gridDim)].pressure;
-	gridOut[IDX(i, gridDim[0] - 1, gridDim)].velX = gridOut[IDX(i, gridDim[0] - 2, gridDim)].pressure;
+	if(j == 0) {
+		gridOut[IDX(i, 0, gridDim)].velX = -gridOut[IDX(i, 0, gridDim)].pressure;
+		gridOut[IDX(i, gridDim[0] - 1, gridDim)].velX = gridOut[IDX(i, gridDim[0] - 2, gridDim)].pressure;
+	}
+	if(i == 0) {
+		// left and right absorption
+		gridOut[IDX(0, j, gridDim)].velY = -gridOut[IDX(0, j, gridDim)].pressure;
+		gridOut[IDX(gridDim[1] - 1, j, gridDim)].velY = gridOut[IDX(gridDim[1] - 2, j, gridDim)].pressure;
+	}
 
-	// left and right absorption
-	gridOut[IDX(0, j, gridDim)].velY              = -gridOut[IDX(0, j, gridDim)].pressure;
-	gridOut[IDX(gridDim[1] - 1, j, gridDim)].velY = gridOut[IDX(gridDim[1] - 2, j, gridDim)].pressure;
+	// write to grid
+	grid[id.x * gridDim[1] * gridDim[2] + id.y * gridDim[2] + curTime] = gridOut[IDX(i, j, gridDim)];
+
+	if(i == listenerPos[1] && j == listenerPos[0]) {
+		// add pulse
+		gridOut[IDX(i, j, gridDim)].pressure += gaussianPulse[curTime];
+	}
 }

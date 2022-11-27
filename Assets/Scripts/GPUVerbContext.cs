@@ -25,7 +25,7 @@ namespace GPUVerb
         private Vector2 m_minCorner = new Vector2(0, 0);
         [SerializeField]
         private Vector2 m_maxCorner = new Vector2(9, 9);
-        private FDTDBase m_FDTDSolver;
+        private FDTDBase m_FDTDSolver = null;
 
 
         public Vector2 MinCorner { get => m_minCorner; }
@@ -37,6 +37,14 @@ namespace GPUVerb
             m_FDTDSolver = new FDTDRef(
                 new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                 PlaneverbResolution.LowResolution);
+        }
+
+        private void OnDestroy()
+        {
+            if(m_FDTDSolver != null)
+            {
+                m_FDTDSolver.Dispose();
+            }
         }
 
         private void OnDrawGizmos()

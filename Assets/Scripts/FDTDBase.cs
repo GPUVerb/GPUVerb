@@ -54,7 +54,7 @@ namespace GPUVerb
         }
     }
 
-    public abstract class FDTDBase
+    public abstract class FDTDBase : IDisposable
     {
         protected const float k_soundSpeed = 343.21f;
         protected const float k_pointsPerWaveLength = 3.5f;
@@ -117,5 +117,6 @@ namespace GPUVerb
             );
         }
         public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
+        public abstract void Dispose();
     }
 }

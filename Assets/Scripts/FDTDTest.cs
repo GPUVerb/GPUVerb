@@ -148,8 +148,9 @@ namespace GPUVerb
 
         private void FDTDUnitTest()
         {
-            bool IsEqual(Cell[,,] arr1, Cell[,,] arr2)
+            bool Check(Cell[,,] arr1, Cell[,,] arr2)
             {
+                int mismatch = 0;
                 for(int i=0; i<arr1.GetLength(0); ++i)
                 {
                     for(int j=0; j<arr1.GetLength(1); ++j)
@@ -158,10 +159,15 @@ namespace GPUVerb
                         {
                             if(!arr1[i,j,k].Equals(arr2[i,j,k]))
                             {
-                                return false;
+                                ++ mismatch;
                             }
                         }
                     }
+                }
+                if(mismatch > 0)
+                {
+                    Debug.LogError($"{mismatch} out of {arr1.GetLength(0) * arr1.GetLength(1) * arr1.GetLength(2)}");
+                    return false;
                 }
                 return true;
             }
@@ -184,6 +190,9 @@ namespace GPUVerb
             correct.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
             fdtd.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
 
+            correct.GenerateResponse(Vector3.zero);
+            fdtd.GenerateResponse(Vector3.zero);
+
             for (int x = 0; x < gridSizeInCells.x; ++x)
             {
                 for(int y = 0; y < gridSizeInCells.y; ++y)
@@ -195,7 +204,7 @@ namespace GPUVerb
                         ++ z;
                     }
                     z = 0;
-                    foreach (Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                    foreach (Cell c in fdtd.GetResponse(new Vector2Int(x, y)))
                     {
                         c2[x, y, z] = c;
                         ++z;
@@ -203,7 +212,12 @@ namespace GPUVerb
                 }
             }
 
-            Debug.Assert(IsEqual(c1, c2));
+            Debug.Assert(Check(c1, c2));
+
+            Debug.Log("FDTD unit test passed");
+
+            correct.Dispose();
+            fdtd.Dispose();
         }
     }
 }
