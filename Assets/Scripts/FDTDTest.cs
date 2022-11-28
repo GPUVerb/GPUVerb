@@ -38,7 +38,7 @@ namespace GPUVerb
 
         private void Awake()
         {
-            FDTDUnitTest();
+            // FDTDUnitTest();
         }
 
 
@@ -85,6 +85,20 @@ namespace GPUVerb
             foreach (Info info in m_cubeInfos)
             {
                 info.cur = solver.GetResponse(solver.ToGridPos(info.pos)).GetEnumerator();
+            }
+
+            int cnt = 0;
+            Trav(solver, -1, (Cell c) =>
+            {
+                if (Mathf.Approximately(0, c.pressure))
+                    ++cnt;
+            });
+
+            Vector2Int size = solver.GetGridSizeInCells();
+            int totalCnt = size.x * size.y * solver.GetResponseLength();
+            if (cnt == totalCnt)
+            {
+                Debug.LogError("FDTD response is all zero");
             }
         }
 
@@ -146,6 +160,27 @@ namespace GPUVerb
             }
         }
 
+        void Trav(FDTDBase solver, int iter, Action<Cell> func)
+        {
+            Vector2Int gridSizeInCells = solver.GetGridSizeInCells();
+
+            for (int x = 0; x < gridSizeInCells.x; ++x)
+            {
+                for (int y = 0; y < gridSizeInCells.y; ++y)
+                {
+                    int z = 0;
+                    foreach (Cell c in solver.GetResponse(new Vector2Int(x, y)))
+                    {
+                        if (iter == z || iter == -1)
+                        {
+                            func(c);
+                        }
+
+                        ++z;
+                    }
+                }
+            }
+        }
 
         private void FDTDUnitTest()
         {
@@ -218,15 +253,15 @@ namespace GPUVerb
             }
             else
             {
-                StringBuilder sb1 = new();
-                StringBuilder sb2 = new();
-                int iter = 2;
+                StringBuilder sb1 = new StringBuilder();
+                StringBuilder sb2 = new StringBuilder();
+                int iter = numSamples - 1;
                 for (int x = 0; x < gridSizeInCells.x; ++x)
                 {
                     for (int y = 0; y < gridSizeInCells.y; ++y)
                     {
-                        sb1.Append(c1[x, y, iter].ToString(true)); sb1.Append(',');
-                        sb2.Append(c2[x, y, iter].ToString(true)); sb2.Append(',');
+                        sb1.Append(c1[x, y, iter].ToString(true)); sb1.Append(", ");
+                        sb2.Append(c2[x, y, iter].ToString(true)); sb2.Append(", ");
                     }
                     sb1.AppendLine(); sb2.AppendLine();
                 }

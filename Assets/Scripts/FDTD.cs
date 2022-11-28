@@ -16,7 +16,6 @@ namespace GPUVerb
         const string k_gaussianPulseShaderParam = "gaussianPulse";
         const string k_listenerPosShaderParam = "listenerPos";
         const string k_courantShaderParam = "courant";
-
         const string k_curTimeShaderParam = "curTime";
         const string k_gridDimShaderParam = "gridDim";
         const string k_updateDimShaderParam = "updateDim";
@@ -68,6 +67,7 @@ namespace GPUVerb
             m_gridOutputBuf = new ComputeBuffer(planeSize, Marshal.SizeOf(typeof(Cell)));
             m_gridInputBuf = new ComputeBuffer(planeSize, Marshal.SizeOf(typeof(Cell)));
             m_gridBuf = new ComputeBuffer(totalSize, Marshal.SizeOf(typeof(Cell)));
+
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, GetResponseLength()];
 
             m_gridSizeInCells1D = totalSize;
@@ -104,6 +104,7 @@ namespace GPUVerb
 
         public override void GenerateResponse(Vector3 listener)
         {
+            Vector2Int listenerPosGrid = ToGridPos(new Vector2(listener.x, listener.z));
             Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
 
             // bind gridDim
@@ -129,7 +130,7 @@ namespace GPUVerb
             // bind courant
             m_shader.SetFloat(k_courantShaderParam, k_soundSpeed * m_dt / m_cellSize);
             // bind listener pos
-            m_shader.SetFloats(k_listenerPosShaderParam, new float[] { listener.x, listener.z });
+            m_shader.SetFloats(k_listenerPosShaderParam, new float[] { listenerPosGrid.x, listenerPosGrid.y });
             // bind gaussian pulse
             m_shader.SetBuffer(m_FDTDKernel, k_gaussianPulseShaderParam, m_gaussianBuffer);
 

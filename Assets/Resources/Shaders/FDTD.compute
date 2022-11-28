@@ -4,7 +4,6 @@
 #pragma kernel KernTest
 #pragma kernel KernAddBounds
 #pragma kernel KernRemoveBounds
-
 struct Cell {
 	float pressure;
 	float velX;
@@ -128,6 +127,26 @@ void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	WriteBy(0, gi, gj);
 }
 
+
+float CalculateVel(const int ni, const int nj, const int i, const int j, const float curVel) {
+	const Cell c = gridOut[IDX(i, j, gridDim)];
+	const Cell neighbor = gridOut[IDX(ni, nj, gridDim)];
+
+	const float betaN = GetB_Out(ni, nj);
+	const float rn = boundaries[IDX(ni, nj, gridDim)].absorption;
+	const float yn = (1.f - rn) / (1.f + rn);
+	const float beta = GetB_Out(i, j);
+	const float r = boundaries[IDX(i, j, gridDim)].absorption;
+	const float y = (1.f - r) / (1.f + r);
+
+	const float gradient = c.pressure - neighbor.pressure;
+	const float airUpdate = curVel - courant * gradient;
+	const float yBoundary = beta * yn + betaN * y;
+	const float wallUpdate = yBoundary * (neighbor.pressure * betaN + c.pressure * beta);
+
+	return beta * betaN * airUpdate + (betaN - beta) * wallUpdate;
+}
+
 // A single iteration of FDTD solver
 // required binding: 
 //     gridDim, curTime, grid, gridIn, gridOut, boundaries, courant, listenerPos, gaussianPulse
@@ -146,63 +165,42 @@ void KernFDTD(
 		return;
 	}
 
-	// first copy b from previous time step
-	gridOut[IDX(i, j, gridDim)].b = gridIn[IDX(i, j, gridDim)].b;
+	const Cell c = gridIn[IDX(i, j, gridDim)];
+
+	// copy from previous time step
+	gridOut[IDX(i, j, gridDim)] = c;
 
 	// pressure
+	float divergence = 0;
 	if (VALID(i + 1, j, gridDim) && VALID(i, j + 1, gridDim)) {
-		const Cell c  = gridIn[IDX(i, j, gridDim)];
 		const Cell cy = gridIn[IDX(i + 1, j, gridDim)];
 		const Cell cx = gridIn[IDX(i, j + 1, gridDim)];
-
-		const float divergence = (cx.velX - c.velX) + (cy.velY - c.velY);
-
-		gridOut[IDX(i,j,gridDim)].pressure = GetB_In(i, j) * (c.pressure - courant * divergence);
+		divergence = (cx.velX - c.velX) + (cy.velY - c.velY);
+	} else if (VALID(i + 1, j, gridDim)) {
+		const Cell cy = gridIn[IDX(i + 1, j, gridDim)];
+		divergence = -c.velX + (cy.velY - c.velY);
+	} else if (VALID(i, j + 1, gridDim)) {
+		const Cell cx = gridIn[IDX(i, j + 1, gridDim)];
+		divergence = (cx.velX - c.velX) - c.velY;
+	} else {
+		divergence = 0;
 	}
 
-	GroupMemoryBarrierWithGroupSync();
+	gridOut[IDX(i, j, gridDim)].pressure = GetB_In(i, j) * (c.pressure - courant * divergence);
+	AllMemoryBarrier();
 
 	// velocity x
 	if (VALID(i, j - 1, gridDim)) {
-		const Cell c  = gridOut[IDX(i, j, gridDim)];
-		const Cell cx = gridOut[IDX(i, j - 1, gridDim)];
-
-		const float betaN = GetB_Out(i, j - 1);
-		const float rn    = boundaries[IDX(i, j - 1, gridDim)].absorption;
-		const float yn    = (1.f - rn) / (1.f + rn);
-		const float beta  = GetB_Out(i, j);
-		const float r     = boundaries[IDX(i, j, gridDim)].absorption;
-		const float y     = (1.f - r) / (1.f + r);
-
-		const float gradientX  = c.pressure - cx.pressure;
-		const float airUpdate  = c.velX - courant * gradientX;
-		const float yBoundary  = beta * yn + betaN * y;
-		const float wallUpdate = yBoundary * (cx.pressure * betaN + c.pressure * beta);
-
-		gridOut[IDX(i, j, gridDim)].velX = beta * betaN * airUpdate + (betaN - beta) * wallUpdate;
+		gridOut[IDX(i, j, gridDim)].velX = CalculateVel(i, j - 1, i, j, gridOut[IDX(i, j, gridDim)].velX);
+	} else {
+		gridOut[IDX(i, j, gridDim)].velX = gridIn[IDX(i, j, gridDim)].velX;
 	}
-
-	GroupMemoryBarrierWithGroupSync();
-
 
 	// velocity Y
 	if (VALID(i - 1, j, gridDim)) {
-		const Cell c  = gridOut[IDX(i,j,gridDim)];
-		const Cell cy = gridOut[IDX(i - 1, j, gridDim)];
-
-		const float betaN = GetB_Out(i - 1, j);
-		const float rn    = boundaries[IDX(i - 1, j, gridDim)].absorption;
-		const float yn    = (1.f - rn) / (1.f + rn);
-		const float beta  = GetB_Out(i, j);
-		const float r     = boundaries[IDX(i,j,gridDim)].absorption;
-		const float y     = (1.f - r) / (1.f + r);
-
-		const float gradientY  = c.pressure - cy.pressure;
-		const float airUpdate  = c.velY - courant * gradientY;
-		const float yBoundary  = beta * yn + betaN * y;
-		const float wallUpdate = yBoundary * (cy.pressure * betaN + c.pressure * beta);
-
-		gridOut[IDX(i,j,gridDim)].velY = beta * betaN * airUpdate + (betaN - beta) * wallUpdate;
+		gridOut[IDX(i, j, gridDim)].velY = CalculateVel(i - 1, j, i, j, gridOut[IDX(i, j, gridDim)].velY);
+	} else {
+		gridOut[IDX(i, j, gridDim)].velY = gridIn[IDX(i, j, gridDim)].velY;
 	}
 
 	// top and bottom absorption
@@ -210,8 +208,9 @@ void KernFDTD(
 		gridOut[IDX(i, 0, gridDim)].velX = -gridOut[IDX(i, 0, gridDim)].pressure;
 		gridOut[IDX(i, gridDim[0] - 1, gridDim)].velX = gridOut[IDX(i, gridDim[0] - 2, gridDim)].pressure;
 	}
+
+	// left and right absorption
 	if(i == 0) {
-		// left and right absorption
 		gridOut[IDX(0, j, gridDim)].velY = -gridOut[IDX(0, j, gridDim)].pressure;
 		gridOut[IDX(gridDim[1] - 1, j, gridDim)].velY = gridOut[IDX(gridDim[1] - 2, j, gridDim)].pressure;
 	}

@@ -79,6 +79,7 @@ namespace GPUVerb
         protected SortedDictionary<int, PlaneVerbAABB> m_geometries;
         protected int m_nextGeoID;
 
+        // TODO: remove ID
         protected int m_id;
         public int ID { get => m_id; }
 

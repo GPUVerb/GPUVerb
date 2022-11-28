@@ -36,14 +36,14 @@ namespace GPUVerb
 
         private void Init()
         {
-            m_FDTDSolver = new FDTDRef(
+            m_FDTDSolver = new FDTD(
                 new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                 PlaneverbResolution.LowResolution);
-            m_AnalyzerSolver = new AnalyzerRef(
+/*            m_AnalyzerSolver = new AnalyzerRef(
                 new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                 m_FDTDSolver.GetGridSizeInCells(),
                 PlaneverbResolution.LowResolution,
-                m_FDTDSolver.ID);
+                0);*/
         }
 
         private void OnDestroy()
