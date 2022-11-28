@@ -45,6 +45,14 @@ namespace GPUVerb
         public float width;
         public float height;
         public float absorption;
+        public Vector2 min
+        {
+            get => new Vector2(position.x - width / 2, position.y - height / 2);
+        }
+        public Vector2 max
+        {
+            get => new Vector2(position.x + width / 2, position.y + height / 2);
+        }
 
         public PlaneVerbAABB(PlaneVerbVec2 position, float width, float height, float absorption)
         {
@@ -53,18 +61,12 @@ namespace GPUVerb
             this.height = height;
             this.absorption = absorption;
         }
-
-        public static explicit operator Bounds(PlaneVerbAABB aabb)
+        public PlaneVerbAABB(Bounds bounds, float absorption)
         {
-            Vector3 pos = new Vector3(aabb.position.x, 0, aabb.position.y);
-            return new Bounds(pos, new Vector3(aabb.width, 0, aabb.height));
-        }
-        public static explicit operator PlaneVerbAABB(Bounds bounds)
-        {
-            return new PlaneVerbAABB(
-                new PlaneVerbVec2(bounds.center.x, bounds.center.z),
-                bounds.size.x, bounds.size.z,
-                AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default));
+            this.position = new PlaneVerbVec2(bounds.center.x, bounds.center.z);
+            this.width = bounds.size.x;
+            this.height = bounds.size.z;
+            this.absorption = absorption;
         }
     }
 }

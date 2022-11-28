@@ -28,6 +28,7 @@ float                          courant;
 
 // used by geometry updates
 int4 updateDim;
+float updateAbsorption;
 
 #define IDX(i,j,dim) ((i) * dim[0] + (j))
 #define VALID(i,j,dim) ((i) < dim[1] && (j) < dim[0])
@@ -65,6 +66,7 @@ void KernTest(uint3 id : SV_DispatchThreadID) {
 	WriteB(GetB_In(i, j) + (i + 1) * (j + 1), i, j);
 }
 
+// required binding: gridDim, gridOut
 [numthreads(8, 8, 1)]
 void KernZero(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
@@ -74,13 +76,16 @@ void KernZero(uint3 id : SV_DispatchThreadID) {
 		return;
 	}
 
+	// the b fields are not zeroed.
+	// and are set by the add/removeBounds functions
 	gridOut[IDX(i,j,gridDim)].pressure = 0;
 	gridOut[IDX(i,j,gridDim)].velX     = 0;
 	gridOut[IDX(i,j,gridDim)].velY     = 0;
 }
 
 
-// required binding: updateDim, gridDim, gridOut, boundaries
+// required binding:
+// updateDim, gridDim, gridOut, boundaries
 [numthreads(8, 8, 1)]
 void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
@@ -106,7 +111,8 @@ void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 	}
 }
 
-// required binding: updateDim, gridDim, gridOut, boundaries
+// required binding:
+// updateDim, updateAbsorption, gridDim, gridOut, boundaries
 [numthreads(8, 8, 1)]
 void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
@@ -116,7 +122,7 @@ void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	}
 	const int gi = i + updateDim[1];
 	const int gj = j + updateDim[0];
-	boundaries[IDX(gi, gj, gridDim)].absorption = 0;
+	boundaries[IDX(gi, gj, gridDim)].absorption = updateAbsorption;
 
 	WriteB(0, gi, gj);
 	WriteBy(0, gi, gj);
@@ -158,14 +164,14 @@ void KernFDTD(
 
 	// velocity x
 	if (VALID(i, j - 1, gridDim)) {
-		const Cell c  = gridOut[IDX(i,j,gridDim)];
+		const Cell c  = gridOut[IDX(i, j, gridDim)];
 		const Cell cx = gridOut[IDX(i, j - 1, gridDim)];
 
 		const float betaN = GetB_Out(i, j - 1);
 		const float rn    = boundaries[IDX(i, j - 1, gridDim)].absorption;
 		const float yn    = (1.f - rn) / (1.f + rn);
 		const float beta  = GetB_Out(i, j);
-		const float r     = boundaries[IDX(i,j,gridDim)].absorption;
+		const float r     = boundaries[IDX(i, j, gridDim)].absorption;
 		const float y     = (1.f - r) / (1.f + r);
 
 		const float gradientX  = c.pressure - cx.pressure;
@@ -173,7 +179,7 @@ void KernFDTD(
 		const float yBoundary  = beta * yn + betaN * y;
 		const float wallUpdate = yBoundary * (cx.pressure * betaN + c.pressure * beta);
 
-		gridOut[IDX(i,j,gridDim)].velX = beta * betaN * airUpdate + (betaN - beta) * wallUpdate;
+		gridOut[IDX(i, j, gridDim)].velX = beta * betaN * airUpdate + (betaN - beta) * wallUpdate;
 	}
 
 	GroupMemoryBarrierWithGroupSync();

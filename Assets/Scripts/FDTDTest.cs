@@ -187,8 +187,8 @@ namespace GPUVerb
             Cell[,,] c1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
             Cell[,,] c2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
 
-            correct.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
-            fdtd.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
+            correct.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
+            fdtd.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
 
             correct.GenerateResponse(Vector3.zero);
             fdtd.GenerateResponse(Vector3.zero);
@@ -220,12 +220,13 @@ namespace GPUVerb
             {
                 StringBuilder sb1 = new();
                 StringBuilder sb2 = new();
+                int iter = 2;
                 for (int x = 0; x < gridSizeInCells.x; ++x)
                 {
                     for (int y = 0; y < gridSizeInCells.y; ++y)
                     {
-                        sb1.Append(c1[x, y, 0].ToString(true)); sb1.Append(',');
-                        sb2.Append(c2[x, y, 0].ToString(true)); sb2.Append(',');
+                        sb1.Append(c1[x, y, iter].ToString(true)); sb1.Append(',');
+                        sb2.Append(c2[x, y, iter].ToString(true)); sb2.Append(',');
                     }
                     sb1.AppendLine(); sb2.AppendLine();
                 }

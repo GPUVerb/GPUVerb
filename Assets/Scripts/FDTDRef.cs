@@ -37,7 +37,6 @@ namespace GPUVerb
             m_id = PlaneverbCreateGrid(gridSize.x, gridSize.y, (int)res);
             m_numSamples = PlaneverbGetGridResponseLength(m_id);
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, m_numSamples];
-            m_geometries = new SortedDictionary<int, Bounds>();
         }
         public override void GenerateResponse(Vector3 listener)
         {
@@ -71,21 +70,21 @@ namespace GPUVerb
             return PlaneverbGetGridResponseLength(m_id);
         }
 
-        public override int AddGeometry(Bounds geom)
+        public override int AddGeometry(PlaneVerbAABB geom)
         {
-            PlaneverbAddAABB(m_id, (PlaneVerbAABB)geom);
+            PlaneverbAddAABB(m_id, geom);
             return base.AddGeometry(geom);
         }
 
-        public override void UpdateGeometry(int id, Bounds geom)
+        public override void UpdateGeometry(int id, PlaneVerbAABB geom)
         {
-            PlaneverbUpdateAABB(m_id, (PlaneVerbAABB)m_geometries[id], (PlaneVerbAABB)geom);
+            PlaneverbUpdateAABB(m_id, m_geometries[id], geom);
             base.UpdateGeometry(id, geom);
         }
 
         public override void RemoveGeometry(int id)
         {
-            PlaneverbRemoveAABB(m_id, (PlaneVerbAABB)m_geometries[id]);
+            PlaneverbRemoveAABB(m_id, m_geometries[id]);
             base.RemoveGeometry(id);
         }
 

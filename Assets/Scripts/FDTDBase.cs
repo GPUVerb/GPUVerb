@@ -76,7 +76,7 @@ namespace GPUVerb
         protected uint m_samplingRate;
         protected float m_numSecsPerResponse;
         protected int m_responseLength;
-        protected SortedDictionary<int, Bounds> m_geometries;
+        protected SortedDictionary<int, PlaneVerbAABB> m_geometries;
         protected int m_nextGeoID;
 
         public FDTDBase(Vector2 gridSize, PlaneverbResolution res) 
@@ -95,19 +95,19 @@ namespace GPUVerb
             m_numSecsPerResponse = domainSize / (Mathf.Sqrt(2) * k_soundSpeed) + 0.25f;
             m_responseLength = (int)(m_samplingRate * m_numSecsPerResponse);
 
-            m_geometries = new SortedDictionary<int, Bounds>();
+            m_geometries = new SortedDictionary<int, PlaneVerbAABB>();
             m_nextGeoID = 0;
         }
         private FDTDBase() { }
         public virtual int GetResponseLength() => m_responseLength;
         public abstract void GenerateResponse(Vector3 listener);
         public abstract IEnumerable<Cell> GetResponse(Vector2Int gridPos);
-        public virtual int AddGeometry(Bounds geom)
+        public virtual int AddGeometry(PlaneVerbAABB geom)
         {
             m_geometries.Add(m_nextGeoID, geom);
             return m_nextGeoID++;
         }
-        public virtual void UpdateGeometry(int id, Bounds geom)
+        public virtual void UpdateGeometry(int id, PlaneVerbAABB geom)
         {
             if (!m_geometries.ContainsKey(id))
                 return;
