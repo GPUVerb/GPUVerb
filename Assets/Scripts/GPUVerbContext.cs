@@ -26,17 +26,24 @@ namespace GPUVerb
         [SerializeField]
         private Vector2 m_maxCorner = new Vector2(9, 9);
         private FDTDBase m_FDTDSolver = null;
+        private AnalyzerBase m_AnalyzerSolver = null;
 
 
         public Vector2 MinCorner { get => m_minCorner; }
         public Vector2 MaxCorner { get => m_maxCorner; }
         public FDTDBase FDTDSolver { get => m_FDTDSolver; }
+        public AnalyzerBase AnalyzerSolver { get => m_AnalyzerSolver; }
 
         private void Init()
         {
             m_FDTDSolver = new FDTDRef(
                 new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                 PlaneverbResolution.LowResolution);
+            m_AnalyzerSolver = new AnalyzerRef(
+                new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                m_FDTDSolver.GetGridSizeInCells(),
+                PlaneverbResolution.LowResolution,
+                m_FDTDSolver.ID);
         }
 
         private void OnDestroy()
@@ -44,6 +51,10 @@ namespace GPUVerb
             if(m_FDTDSolver != null)
             {
                 m_FDTDSolver.Dispose();
+            }
+            if (m_AnalyzerSolver != null)
+            {
+                m_AnalyzerSolver.Dispose();
             }
         }
 

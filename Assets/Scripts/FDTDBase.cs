@@ -79,6 +79,9 @@ namespace GPUVerb
         protected SortedDictionary<int, PlaneVerbAABB> m_geometries;
         protected int m_nextGeoID;
 
+        protected int m_id;
+        public int ID { get => m_id; }
+
         public FDTDBase(Vector2 gridSize, PlaneverbResolution res) 
         {
             float minWavelength = k_soundSpeed / (float)res;
@@ -128,6 +131,7 @@ namespace GPUVerb
             );
         }
         public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
+        public float GetCellSize() => m_cellSize;
         public abstract void Dispose();
 
         #region DEBUG

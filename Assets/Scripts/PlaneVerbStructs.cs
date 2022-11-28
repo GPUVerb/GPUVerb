@@ -26,11 +26,11 @@ namespace GPUVerb
         public static implicit operator Vector2(PlaneVerbVec2 vec2) => new Vector2(vec2.x, vec2.y);
         public static implicit operator PlaneVerbVec2(Vector2 vec2) => new PlaneVerbVec2(vec2.x, vec2.y);
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct PlaneVerbOutput
     {
-        public float occlution;
+        public float occlusion;
         public float wetGain;
         public float rt60;
         public float lowpass;

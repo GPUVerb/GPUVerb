@@ -29,7 +29,6 @@ namespace GPUVerb
 
         Cell[,,] m_grid;
         int m_numSamples;
-        int m_id;
 
 
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
