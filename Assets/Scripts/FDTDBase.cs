@@ -42,6 +42,17 @@ namespace GPUVerb
         {
             return $"[ pr = {pressure}, vel = [{velX},{velY}], b = {b}, by = {by} ]";
         }
+        public string ToString(bool concise)
+        {
+            if(concise)
+            {
+                return $"{pressure} {velX} {velY} {b} {by}";
+            }
+            else
+            {
+                return ToString();
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -118,5 +129,9 @@ namespace GPUVerb
         }
         public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
         public abstract void Dispose();
+
+        #region DEBUG
+        
+        #endregion
     }
 }

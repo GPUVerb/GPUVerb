@@ -89,16 +89,20 @@ void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 		return;
 	}
 
-	boundaries[IDX(i + updateDim[1], j + updateDim[0], gridDim)].absorption = 0;
-	if(i + updateDim[1] == gridDim[1] - 1 && j + updateDim[0] == gridDim[0] - 1) {
-		WriteB(0, i + updateDim[1], j + updateDim[0]);
-		WriteBy(0, i + updateDim[1], j + updateDim[0]);
-	} else if(j == 0) {
-		WriteB(1, i + updateDim[1], j + updateDim[0]);
-		WriteBy(0, i + updateDim[1], j + updateDim[0]);
+	const int gi = i + updateDim[1];
+	const int gj = j + updateDim[0];
+
+	boundaries[IDX(gi, gj, gridDim)].absorption = 0;
+
+	if(gi == gridDim[1] - 1 || gj == gridDim[0] - 1) {
+		WriteB(0, gi, gj);
+		WriteBy(0, gi, gj);
+	} else if(gi == 0) {
+		WriteB(1, gi, gj);
+		WriteBy(0, gi, gj);
 	} else {
-		WriteB(1, i + updateDim[1], j + updateDim[0]);
-		WriteBy(1, i + updateDim[1], j + updateDim[0]);
+		WriteB(1, gi, gj);
+		WriteBy(1, gi, gj);
 	}
 }
 
@@ -110,10 +114,12 @@ void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	if (j >= updateDim[2] - updateDim[0] || i >= updateDim[3] - updateDim[1]) {
 		return;
 	}
+	const int gi = i + updateDim[1];
+	const int gj = j + updateDim[0];
+	boundaries[IDX(gi, gj, gridDim)].absorption = 0;
 
-	boundaries[IDX(i + updateDim[1], j + updateDim[0], gridDim)].absorption = 0;
-	WriteB(0, i + updateDim[1], j + updateDim[0]);
-	WriteBy(0, i + updateDim[1], j + updateDim[0]);
+	WriteB(0, gi, gj);
+	WriteBy(0, gi, gj);
 }
 
 // A single iteration of FDTD solver
@@ -133,6 +139,9 @@ void KernFDTD(
 	if (!VALID(i, j, gridDim)) {
 		return;
 	}
+
+	// first copy b from previous time step
+	gridOut[IDX(i, j, gridDim)].b = gridIn[IDX(i, j, gridDim)].b;
 
 	// pressure
 	if (VALID(i + 1, j, gridDim) && VALID(i, j + 1, gridDim)) {

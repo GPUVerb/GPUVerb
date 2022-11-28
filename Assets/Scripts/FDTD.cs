@@ -38,8 +38,8 @@ namespace GPUVerb
 
         int m_FDTDKernel = -1;
         int m_ZeroKernel = -1;
-        int m_AddGeomKernel = -1;
-        int m_RemoveGeomKernel = -1;
+        int m_addGeomKernel = -1;
+        int m_removeGeomKernel = -1;
 
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         float[] m_gaussianPulse;
@@ -51,8 +51,8 @@ namespace GPUVerb
             m_shader = Resources.Load<ComputeShader>(k_shaderPath);
             m_FDTDKernel = m_shader.FindKernel(k_FDTDKernelName);
             m_ZeroKernel = m_shader.FindKernel(k_ZeroKernelName);
-            m_AddGeomKernel = m_shader.FindKernel(k_AddGeomKernelName);
-            m_RemoveGeomKernel = m_shader.FindKernel(k_RemoveGeomKernelName);
+            m_addGeomKernel = m_shader.FindKernel(k_AddGeomKernelName);
+            m_removeGeomKernel = m_shader.FindKernel(k_RemoveGeomKernelName);
 
             m_shader.GetKernelThreadGroupSizes(m_FDTDKernel, out uint x, out uint y, out uint _);
             m_threadGroupDim = new Vector2Int((int)x, (int)y);
@@ -83,6 +83,12 @@ namespace GPUVerb
             }
 
             m_gaussianBuffer.SetData(m_gaussianPulse);
+
+            // initialize the input grid by "removing" the bounds spanning the whole grid, i.e. no geometries
+            RemoveGeometryHelper(
+                new Bounds(new Vector3(gridSize.x / 2, 0, gridSize.y / 2), 
+                new Vector3(gridSize.x, 0, gridSize.y))
+            );
         }
 
         Vector2Int GetDispatchDim(Vector2Int inputDim)
@@ -111,7 +117,6 @@ namespace GPUVerb
 
             // required binding: 
             //     gridDim, curTime, grid, gridIn, gridOut, boundaries, courant, listenerPos, gaussianPulse
-
 
             // bind grid
             m_shader.SetBuffer(m_FDTDKernel, k_gridShaderParam, m_gridBuf);
@@ -159,29 +164,29 @@ namespace GPUVerb
         {
             Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.z));
             Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.z));
-            Vector2Int boundsSize = boundsMax - boundsMin;
+            Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
             m_shader.SetInts(k_updateDimShaderParam, new int[] { boundsMin.x, boundsMin.y, boundsMax.x, boundsMax.y });
-            m_shader.SetBuffer(m_AddGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
-            m_shader.SetBuffer(m_AddGeomKernel, k_gridOutShaderParam, m_gridOutputBuf);
+            m_shader.SetBuffer(m_addGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
+            m_shader.SetBuffer(m_addGeomKernel, k_gridOutShaderParam, m_gridInputBuf);
 
             Vector2Int dim = GetDispatchDim(boundsSize);
-            m_shader.Dispatch(m_AddGeomKernel, dim.x, dim.y, 1);
+            m_shader.Dispatch(m_addGeomKernel, dim.x, dim.y, 1);
         }
         void RemoveGeometryHelper(Bounds bounds)
         {
             Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.z));
             Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.z));
-            Vector2Int boundsSize = boundsMax - boundsMin;
+            Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
             m_shader.SetInts(k_updateDimShaderParam, new int[] { boundsMin.x, boundsMin.y, boundsMax.x, boundsMax.y });
-            m_shader.SetBuffer(m_RemoveGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
-            m_shader.SetBuffer(m_RemoveGeomKernel, k_gridOutShaderParam, m_gridOutputBuf);
+            m_shader.SetBuffer(m_removeGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
+            m_shader.SetBuffer(m_removeGeomKernel, k_gridOutShaderParam, m_gridInputBuf);
 
             Vector2Int dim = GetDispatchDim(boundsSize);
-            m_shader.Dispatch(m_RemoveGeomKernel, dim.x, dim.y, 1);
+            m_shader.Dispatch(m_removeGeomKernel, dim.x, dim.y, 1);
         }
         public override int AddGeometry(Bounds bounds)
         {

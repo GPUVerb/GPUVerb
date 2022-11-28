@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using System.Text;
 
 
 namespace GPUVerb
@@ -186,7 +187,6 @@ namespace GPUVerb
             Cell[,,] c1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
             Cell[,,] c2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
 
-
             correct.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
             fdtd.AddGeometry(new Bounds(new Vector3(2.5f, 0, 2.5f), new Vector3(1f, 0, 1f)));
 
@@ -212,10 +212,28 @@ namespace GPUVerb
                 }
             }
 
-            Debug.Assert(Check(c1, c2));
-
-            Debug.Log("FDTD unit test passed");
-
+            if(Check(c1, c2))
+            {
+                Debug.Log("FDTD unit test passed");
+            }
+            else
+            {
+                StringBuilder sb1 = new();
+                StringBuilder sb2 = new();
+                for (int x = 0; x < gridSizeInCells.x; ++x)
+                {
+                    for (int y = 0; y < gridSizeInCells.y; ++y)
+                    {
+                        sb1.Append(c1[x, y, 0].ToString(true)); sb1.Append(',');
+                        sb2.Append(c2[x, y, 0].ToString(true)); sb2.Append(',');
+                    }
+                    sb1.AppendLine(); sb2.AppendLine();
+                }
+                Debug.Log(sb1.ToString());
+                Debug.Log(sb2.ToString());
+                Debug.Log("FDTD unit test failed");
+            }
+           
             correct.Dispose();
             fdtd.Dispose();
         }
