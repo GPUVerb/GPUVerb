@@ -13,9 +13,9 @@ namespace GPUVerb
     public class FDTDGeometry : MonoBehaviour
     {
         [SerializeField]
-        AbsorptionCoefficient m_absorption;
+        AbsorptionCoefficient m_absorption = AbsorptionCoefficient.Default;
 
-        AbsorptionCoefficient m_lastAbsorption;
+        AbsorptionCoefficient m_lastAbsorption = AbsorptionCoefficient.Default;
         Vector3 m_lastPos = Vector3.zero;
 
 
