@@ -37,7 +37,13 @@ namespace GPUVerb
                 Mathf.Approximately(velY, other.velY) &&
                 b == other.b && by == other.by;
         }
-
+        public bool Equals(Cell other, float tolerance)
+        {
+            return Mathf.Approximately(tolerance, Mathf.Abs(pressure - other.pressure)) &&
+                   Mathf.Approximately(tolerance, Mathf.Abs(velX - other.velX)) &&
+                   Mathf.Approximately(tolerance, Mathf.Abs(velY - other.velY)) &&
+                   b == other.b && by == other.by;
+        }
         public override string ToString()
         {
             return $"[ pr = {pressure}, vel = [{velX},{velY}], b = {b}, by = {by} ]";
