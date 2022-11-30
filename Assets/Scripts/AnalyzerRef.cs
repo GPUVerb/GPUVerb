@@ -61,10 +61,6 @@ namespace GPUVerb
         public override void AnalyzeResponses(Vector3 listener)
         {
             Profiler.BeginSample("AnalyzerRef.GenerateResponse");
-
-            FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
-            FDTDsolver.GenerateResponse(listener);
-
             unsafe
             {
                 fixed (AnalyzerResult* ptr = m_AnalyzerGrid)
@@ -74,16 +70,18 @@ namespace GPUVerb
                 }
             }
 
+            //Debug.Log(m_AnalyzerGrid[0,0].ToString());
+
             Profiler.EndSample();
         }
 
-        public override IEnumerable<AnalyzerResult> GetAnalyzerResponse(Vector2Int gridPos)
+        public override AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos)
         {
             if (gridPos.x >= m_AnalyzerGrid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_AnalyzerGrid.GetLength(1) || gridPos.y < 0)
             {
-                yield break;
+                return new AnalyzerResult();
             }
-            yield return m_AnalyzerGrid[gridPos.x, gridPos.y];
+            return m_AnalyzerGrid[gridPos.x, gridPos.y];
         }
 
         public override void Dispose()

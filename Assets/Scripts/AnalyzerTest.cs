@@ -26,14 +26,14 @@ namespace GPUVerb
 
         bool m_simFinished = true;
 
-        class Info
+        class AnalyzerInfo
         {
             public GameObject ins;
             public Vector2 pos;
-            public IEnumerator<AnalyzerResult> cur;
+            public AnalyzerResult cur;
         }
 
-        List<Info> m_cubeInfos = new List<Info>();
+        List<AnalyzerInfo> m_cubeInfos = new List<AnalyzerInfo>();
 
 
         /*private void Awake()
@@ -65,7 +65,7 @@ namespace GPUVerb
                     obj.transform.position = new Vector3(x, m_baseHeight, y);
                     obj.transform.localScale = Vector3.one * m_cubeSize;
 
-                    Info info = new Info
+                    AnalyzerInfo info = new AnalyzerInfo
                     {
                         ins = obj,
                         pos = new Vector2(x, y)
@@ -81,26 +81,29 @@ namespace GPUVerb
             AnalyzerBase solver = GPUVerbContext.Instance.AnalyzerSolver;
             FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
 
+            FDTDsolver.GenerateResponse(m_listener.position);
             solver.AnalyzeResponses(m_listener.position);
 
-            foreach (Info info in m_cubeInfos)
+            foreach (AnalyzerInfo info in m_cubeInfos)
             {
-                info.cur = solver.GetAnalyzerResponse(FDTDsolver.ToGridPos(info.pos)).GetEnumerator();
+                info.cur = solver.GetAnalyzerResponse(FDTDsolver.ToGridPos(info.pos));
             }
         }
 
         IEnumerator Simulate()
         {
             m_simFinished = false;
-            GetData();
 
             for (float curTime = 0; curTime <= m_simTime; curTime += Time.deltaTime)
             {
-                foreach (Info info in m_cubeInfos)
+                GetData();
+
+                foreach (AnalyzerInfo info in m_cubeInfos)
                 {
-                    AnalyzerResult data = info.cur.Current;
-                    float occlusion = data.occlusion;
-                    float h = m_baseHeight + m_motionScale * occlusion;
+                    AnalyzerResult data = info.cur;
+                    float wetGain = data.wetGain;
+                    //Debug.Log(occlusion);
+                    float h = m_baseHeight + m_motionScale * wetGain;
                     info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
                 }
                 yield return new WaitForEndOfFrame();
