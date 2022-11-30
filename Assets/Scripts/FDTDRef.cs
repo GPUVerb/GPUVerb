@@ -51,21 +51,36 @@ namespace GPUVerb
             return PlaneverbGetGridResponseLength(m_id);
         }
 
-        public override int AddGeometry(PlaneVerbAABB geom)
+        public override int AddGeometry(in PlaneVerbAABB geom)
         {
+            if (!IsInGrid(geom.min) && !IsInGrid(geom.max))
+            {
+                return k_invalidGeomID;
+            }
+
             PlaneverbAddAABB(m_id, geom);
             return base.AddGeometry(geom);
         }
 
-        public override void UpdateGeometry(int id, PlaneVerbAABB geom)
+        public override void UpdateGeometry(int id, in PlaneVerbAABB geom)
         {
-            PlaneverbUpdateAABB(m_id, m_geometries[id], geom);
+            if (!IsValid(id))
+            {
+                return;
+            }
+
+            PlaneverbUpdateAABB(m_id, GetBounds(id), geom);
             base.UpdateGeometry(id, geom);
         }
 
         public override void RemoveGeometry(int id)
         {
-            PlaneverbRemoveAABB(m_id, m_geometries[id]);
+            if (!IsValid(id))
+            {
+                return;
+            }
+
+            PlaneverbRemoveAABB(m_id, GetBounds(id));
             base.RemoveGeometry(id);
         }
 

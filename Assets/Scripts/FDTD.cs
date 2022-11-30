@@ -153,10 +153,10 @@ namespace GPUVerb
         }
 
 
-        void AddGeometryHelper(PlaneVerbAABB bounds)
+        void AddGeometryHelper(in PlaneVerbAABB bounds)
         {
-            Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.y));
-            Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.y));
+            Vector2Int boundsMin = ToGridPos(bounds.min);
+            Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
@@ -168,10 +168,10 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(boundsSize);
             m_shader.Dispatch(m_addGeomKernel, dim.x, dim.y, 1);
         }
-        void RemoveGeometryHelper(PlaneVerbAABB bounds)
+        void RemoveGeometryHelper(in PlaneVerbAABB bounds)
         {
-            Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.y));
-            Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.y));
+            Vector2Int boundsMin = ToGridPos(bounds.min);
+            Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
@@ -182,21 +182,36 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(boundsSize);
             m_shader.Dispatch(m_removeGeomKernel, dim.x, dim.y, 1);
         }
-        public override int AddGeometry(PlaneVerbAABB bounds)
+        public override int AddGeometry(in PlaneVerbAABB geom)
         {
-            AddGeometryHelper(bounds);
-            return base.AddGeometry(bounds);
+            if (!IsInGrid(geom.min) && !IsInGrid(geom.max))
+            {
+                return k_invalidGeomID;
+            }
+
+            AddGeometryHelper(geom);
+            return base.AddGeometry(geom);
         }
 
         public override void RemoveGeometry(int id)
         {
-            RemoveGeometryHelper(m_geometries[id]);
+            if(!IsValid(id))
+            {
+                return;
+            }
+
+            RemoveGeometryHelper(GetBounds(id));
             base.RemoveGeometry(id);
         }
 
-        public override void UpdateGeometry(int id, PlaneVerbAABB geom)
+        public override void UpdateGeometry(int id, in PlaneVerbAABB geom)
         {
-            RemoveGeometryHelper(m_geometries[id]);
+            if (!IsValid(id))
+            {
+                return;
+            }
+
+            RemoveGeometryHelper(GetBounds(id));
             AddGeometryHelper(geom);
             base.UpdateGeometry(id, geom);
         }

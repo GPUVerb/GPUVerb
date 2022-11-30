@@ -73,17 +73,35 @@ namespace GPUVerb
 
     public abstract class FDTDBase : IDisposable
     {
+        public struct GeomtryUpdateInfo
+        {
+            public enum Type
+            {
+                ADD, REMOVE, UPDATE
+            }
+            public Type type;
+            public int id;
+            public PlaneVerbAABB bounds;
+        }
+
         protected const float k_soundSpeed = 343.21f;
         protected const float k_pointsPerWaveLength = 3.5f;
 
+        protected Vector2 m_gridSize;
         protected Vector2Int m_gridSizeInCells;
         protected float m_cellSize;
         protected float m_dt;
         protected uint m_samplingRate;
         protected float m_numSecsPerResponse;
         protected int m_responseLength;
-        protected SortedDictionary<int, PlaneVerbAABB> m_geometries;
+
+        #region Geometry Data
+        protected const int k_invalidGeomID = -1;
+        protected List<(bool, PlaneVerbAABB)> m_geometries;
         protected int m_nextGeoID;
+        protected SortedDictionary<int, GeomtryUpdateInfo> m_pendingUpdates;
+        #endregion
+        
         protected Cell[,,] m_grid;
 
         // TODO: remove ID
@@ -92,6 +110,8 @@ namespace GPUVerb
 
         public FDTDBase(Vector2 gridSize, PlaneverbResolution res) 
         {
+            m_gridSize = gridSize;
+
             float minWavelength = k_soundSpeed / (float)res;
             m_cellSize = minWavelength / k_pointsPerWaveLength;
             m_dt = m_cellSize / (k_soundSpeed * 1.5f);
@@ -106,7 +126,7 @@ namespace GPUVerb
             m_numSecsPerResponse = domainSize / (Mathf.Sqrt(2) * k_soundSpeed) + 0.25f;
             m_responseLength = (int)(m_samplingRate * m_numSecsPerResponse);
 
-            m_geometries = new SortedDictionary<int, PlaneVerbAABB>();
+            m_geometries = new List<(bool, PlaneVerbAABB)>();
             m_nextGeoID = 0;
         }
         private FDTDBase() { }
@@ -123,31 +143,44 @@ namespace GPUVerb
                 yield return m_grid[gridPos.x, gridPos.y, i];
             }
         }
-        public virtual int AddGeometry(PlaneVerbAABB geom)
+        public virtual int AddGeometry(in PlaneVerbAABB geom)
         {
-            m_geometries.Add(m_nextGeoID, geom);
-            return m_nextGeoID++;
+            m_geometries.Add((true, geom));
+            return m_geometries.Count - 1;
         }
-        public virtual void UpdateGeometry(int id, PlaneVerbAABB geom)
+        public virtual void UpdateGeometry(int id, in PlaneVerbAABB geom)
         {
-            if (!m_geometries.ContainsKey(id))
+            if (!IsValid(id))
                 return;
-            m_geometries[id] = geom;
+            m_geometries[id] = (true, geom);
         }
         public virtual void RemoveGeometry(int id)
         {
-            if (!m_geometries.ContainsKey(id))
+            if (!IsValid(id))
                 return;
-            m_geometries.Remove(id);
+            m_geometries[id] = (false, new PlaneVerbAABB());
+        }
+        public PlaneVerbAABB GetBounds(int id)
+        {
+            return m_geometries[id].Item2;
+        }
+        public bool IsValid(int id)
+        {
+            return id >= 0 && id < m_geometries.Count && m_geometries[id].Item1;
         }
 
+        public bool IsInGrid(in Vector2 pos)
+        {
+            return pos.x >= 0 && pos.x <= m_gridSize.x && pos.y >= 0 && pos.y <= m_gridSize.y;
+        }
         public Vector2Int ToGridPos(Vector2 pos)
         {
             return new Vector2Int(
-                Mathf.FloorToInt(pos.x / m_cellSize),
-                Mathf.FloorToInt(pos.y / m_cellSize)
+                Mathf.Clamp(Mathf.FloorToInt(pos.x / m_cellSize), 0, m_gridSizeInCells.x - 1),
+                Mathf.Clamp(Mathf.FloorToInt(pos.y / m_cellSize), 0, m_gridSizeInCells.y - 1)
             );
         }
+
         public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
         public float GetCellSize() => m_cellSize;
         public abstract void Dispose();
