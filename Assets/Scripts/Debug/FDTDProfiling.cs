@@ -41,8 +41,8 @@ namespace GPUVerb
 
         void OnDestroy()
         {
-            m_solver.Dispose();
-            m_solverGPU.Dispose();
+            m_solver?.Dispose();
+            m_solverGPU?.Dispose();
         }
 
         void OnGUI()

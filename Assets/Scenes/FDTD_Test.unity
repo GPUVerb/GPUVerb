@@ -660,7 +660,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_minCorner: {x: 0, y: 0}
-  m_maxCorner: {x: 50, y: 50}
+  m_maxCorner: {x: 20, y: 40}
 --- !u!4 &1396085961
 Transform:
   m_ObjectHideFlags: 0
@@ -723,13 +723,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1861659886}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1dd68a2c8b90c0746bab55b674621230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_cubePrefab: {fileID: 284653426105356661, guid: b9f032da546a7954a9afc6239deb38a0, type: 3}
-  m_cubeSize: 5
+  m_cubeSize: 1
   m_baseHeight: 0
   m_motionScale: 10
   m_simTime: 10
