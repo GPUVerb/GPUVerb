@@ -102,6 +102,8 @@ namespace GPUVerb
 
         public override void GenerateResponse(Vector3 listener)
         {
+            ProcessGeometryUpdates();
+
             Vector2Int listenerPosGrid = ToGridPos(new Vector2(listener.x, listener.z));
             Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
 
@@ -182,40 +184,20 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(boundsSize);
             m_shader.Dispatch(m_removeGeomKernel, dim.x, dim.y, 1);
         }
-        public override int AddGeometry(in PlaneVerbAABB geom)
+
+        protected override void DoRemoveGeometry(int id)
         {
-            if (!IsInGrid(geom.min) && !IsInGrid(geom.max))
-            {
-                return k_invalidGeomID;
-            }
-
-            AddGeometryHelper(geom);
-            return base.AddGeometry(geom);
-        }
-
-        public override void RemoveGeometry(int id)
-        {
-            if(!IsValid(id))
-            {
-                return;
-            }
-
             RemoveGeometryHelper(GetBounds(id));
-            base.RemoveGeometry(id);
         }
-
-        public override void UpdateGeometry(int id, in PlaneVerbAABB geom)
+        protected override void DoAddGeometry(int id, in PlaneVerbAABB geom)
         {
-            if (!IsValid(id))
-            {
-                return;
-            }
-
+            DoUpdateGeometry(id, geom);
+        }
+        protected override void DoUpdateGeometry(int id, in PlaneVerbAABB geom)
+        {
             RemoveGeometryHelper(GetBounds(id));
             AddGeometryHelper(geom);
-            base.UpdateGeometry(id, geom);
         }
-
         public override void Dispose()
         {
             m_gaussianBuffer.Dispose();
@@ -224,5 +206,6 @@ namespace GPUVerb
             m_gridInputBuf.Dispose();
             m_gridBuf.Dispose();
         }
+
     }
 }

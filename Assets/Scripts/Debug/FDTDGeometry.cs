@@ -66,6 +66,11 @@ namespace GPUVerb
                 m_lastAbsorption = m_absorption;
             }
         }
+        private void OnDestroy()
+        {
+            m_solver.RemoveGeometry(m_geomID);
+        }
+
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {

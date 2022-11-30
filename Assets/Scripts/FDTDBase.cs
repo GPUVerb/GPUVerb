@@ -73,14 +73,31 @@ namespace GPUVerb
 
     public abstract class FDTDBase : IDisposable
     {
-        public struct GeomtryUpdateInfo
+        public class GeomtryUpdateInfo
         {
-            public enum Type
+            public enum Type : byte
             {
                 ADD, REMOVE, UPDATE
             }
+            public GeomtryUpdateInfo(Type type, PlaneVerbAABB geom)
+            {
+                processed = false;
+                this.type = type;
+                this.bounds = geom;
+            }
+            private GeomtryUpdateInfo() { }
+            public bool processed;
             public Type type;
-            public int id;
+            public PlaneVerbAABB bounds;
+        }
+        private class GeomInfo
+        {
+            public GeomInfo(PlaneVerbAABB bounds)
+            {
+                present = true;
+                this.bounds = bounds;
+            }
+            public bool present;
             public PlaneVerbAABB bounds;
         }
 
@@ -97,9 +114,8 @@ namespace GPUVerb
 
         #region Geometry Data
         protected const int k_invalidGeomID = -1;
-        protected List<(bool, PlaneVerbAABB)> m_geometries;
-        protected int m_nextGeoID;
-        protected SortedDictionary<int, GeomtryUpdateInfo> m_pendingUpdates;
+        private List<GeomInfo> m_geometries;
+        private List<GeomtryUpdateInfo> m_pendingUpdates;
         #endregion
         
         protected Cell[,,] m_grid;
@@ -126,8 +142,8 @@ namespace GPUVerb
             m_numSecsPerResponse = domainSize / (Mathf.Sqrt(2) * k_soundSpeed) + 0.25f;
             m_responseLength = (int)(m_samplingRate * m_numSecsPerResponse);
 
-            m_geometries = new List<(bool, PlaneVerbAABB)>();
-            m_nextGeoID = 0;
+            m_geometries = new List<GeomInfo>();
+            m_pendingUpdates = new List<GeomtryUpdateInfo>();
         }
         private FDTDBase() { }
         public virtual int GetResponseLength() => m_responseLength;
@@ -143,30 +159,90 @@ namespace GPUVerb
                 yield return m_grid[gridPos.x, gridPos.y, i];
             }
         }
-        public virtual int AddGeometry(in PlaneVerbAABB geom)
+        public int AddGeometry(in PlaneVerbAABB geom)
         {
-            m_geometries.Add((true, geom));
+            if (!IsInGrid(geom.min) && !IsInGrid(geom.max))
+            {
+                return k_invalidGeomID;
+            }
+
+            m_geometries.Add(new GeomInfo(geom));
+            m_pendingUpdates.Add(new GeomtryUpdateInfo(GeomtryUpdateInfo.Type.UPDATE, geom));
+
             return m_geometries.Count - 1;
         }
-        public virtual void UpdateGeometry(int id, in PlaneVerbAABB geom)
+        public void UpdateGeometry(int id, in PlaneVerbAABB geom)
+        {
+            if(!IsValid(id))
+            {
+                return;
+            }
+
+            if (m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.REMOVE)
+            {
+                // can't override remove
+                return;
+            }
+
+            m_pendingUpdates[id].processed = false;
+            m_pendingUpdates[id].type = GeomtryUpdateInfo.Type.UPDATE;
+            m_pendingUpdates[id].bounds = geom;
+        }
+        public void RemoveGeometry(int id)
         {
             if (!IsValid(id))
+            {
                 return;
-            m_geometries[id] = (true, geom);
+            }
+
+            m_pendingUpdates[id].processed = false;
+            m_pendingUpdates[id].type = GeomtryUpdateInfo.Type.REMOVE;
         }
-        public virtual void RemoveGeometry(int id)
+
+        protected void ProcessGeometryUpdates()
         {
-            if (!IsValid(id))
-                return;
-            m_geometries[id] = (false, new PlaneVerbAABB());
+            for(int id = 0; id < m_pendingUpdates.Count; ++id)
+            {
+                if(m_pendingUpdates[id].processed)
+                {
+                    continue;
+                }
+
+                if(m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.ADD)
+                    // same as update but makes it a case anyway
+                    // because FDTDRef needs this distinction
+                {
+                    DoAddGeometry(id, m_pendingUpdates[id].bounds);
+                    m_geometries[id].present = true;
+                    m_geometries[id].bounds = m_pendingUpdates[id].bounds;
+                }
+                else if(m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.UPDATE)
+                {
+                    DoUpdateGeometry(id, m_pendingUpdates[id].bounds);
+                    m_geometries[id].present = true;
+                    m_geometries[id].bounds = m_pendingUpdates[id].bounds;
+                }
+                else if(m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.REMOVE)
+                {
+                    DoRemoveGeometry(id);
+                    m_geometries[id].present = false;
+                }
+
+                // mark as processed
+                m_pendingUpdates[id].processed = true;
+            }
         }
+        protected abstract void DoAddGeometry(int id, in PlaneVerbAABB geom);
+        protected abstract void DoRemoveGeometry(int id);
+        protected abstract void DoUpdateGeometry(int id, in PlaneVerbAABB geom);
+
         public PlaneVerbAABB GetBounds(int id)
         {
-            return m_geometries[id].Item2;
+            return m_geometries[id].bounds;
         }
         public bool IsValid(int id)
         {
-            return id >= 0 && id < m_geometries.Count && m_geometries[id].Item1;
+            return id >= 0 && id < m_geometries.Count && m_geometries[id].present;
         }
 
         public bool IsInGrid(in Vector2 pos)
