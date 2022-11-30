@@ -78,7 +78,7 @@ namespace GPUVerb
         //private AnalyzerBase() { }
         public virtual int GetResponseLength() => m_responseLength;
         public abstract void AnalyzeResponses(Vector3 listener);
-        public abstract IEnumerable<AnalyzerResult> GetAnalyzerResponse(Vector2Int gridPos);
+        public abstract AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos);
 
         /*public Vector2Int ToGridPos(Vector2 pos)
         {
