@@ -34,7 +34,6 @@ namespace GPUVerb
         ComputeBuffer m_gridOutputBuf = null;
         ComputeBuffer m_gridInputBuf = null;
         ComputeBuffer m_gridBuf = null;
-        Cell[,,] m_grid = null;
 
         int m_FDTDKernel = -1;
         int m_ZeroKernel = -1;
@@ -44,7 +43,6 @@ namespace GPUVerb
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         float[] m_gaussianPulse;
         int m_gridSizeInCells1D = 0;
-
 
         public FDTD(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -153,22 +151,12 @@ namespace GPUVerb
             // copy m_gridBuf to grid
             m_gridBuf.GetData(m_grid);
         }
-        public override IEnumerable<Cell> GetResponse(Vector2Int gridPos)
-        {
-            if (gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
-            {
-                yield break;
-            }
-            for (int i = 0; i < GetResponseLength(); ++i)
-            {
-                yield return m_grid[gridPos.x, gridPos.y, i];
-            }
-        }
 
-        void AddGeometryHelper(PlaneVerbAABB bounds)
+
+        void AddGeometryHelper(in PlaneVerbAABB bounds)
         {
-            Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.y));
-            Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.y));
+            Vector2Int boundsMin = ToGridPos(bounds.min);
+            Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
@@ -180,10 +168,10 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(boundsSize);
             m_shader.Dispatch(m_addGeomKernel, dim.x, dim.y, 1);
         }
-        void RemoveGeometryHelper(PlaneVerbAABB bounds)
+        void RemoveGeometryHelper(in PlaneVerbAABB bounds)
         {
-            Vector2Int boundsMin = ToGridPos(new Vector2(bounds.min.x, bounds.min.y));
-            Vector2Int boundsMax = ToGridPos(new Vector2(bounds.max.x, bounds.max.y));
+            Vector2Int boundsMin = ToGridPos(bounds.min);
+            Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
@@ -194,21 +182,36 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(boundsSize);
             m_shader.Dispatch(m_removeGeomKernel, dim.x, dim.y, 1);
         }
-        public override int AddGeometry(PlaneVerbAABB bounds)
+        public override int AddGeometry(in PlaneVerbAABB geom)
         {
-            AddGeometryHelper(bounds);
-            return base.AddGeometry(bounds);
+            if (!IsInGrid(geom.min) && !IsInGrid(geom.max))
+            {
+                return k_invalidGeomID;
+            }
+
+            AddGeometryHelper(geom);
+            return base.AddGeometry(geom);
         }
 
         public override void RemoveGeometry(int id)
         {
-            RemoveGeometryHelper(m_geometries[id]);
+            if(!IsValid(id))
+            {
+                return;
+            }
+
+            RemoveGeometryHelper(GetBounds(id));
             base.RemoveGeometry(id);
         }
 
-        public override void UpdateGeometry(int id, PlaneVerbAABB geom)
+        public override void UpdateGeometry(int id, in PlaneVerbAABB geom)
         {
-            RemoveGeometryHelper(m_geometries[id]);
+            if (!IsValid(id))
+            {
+                return;
+            }
+
+            RemoveGeometryHelper(GetBounds(id));
             AddGeometryHelper(geom);
             base.UpdateGeometry(id, geom);
         }

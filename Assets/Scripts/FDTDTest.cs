@@ -193,7 +193,7 @@ namespace GPUVerb
                     {
                         for(int k=0; k<arr1.GetLength(2); ++k)
                         {
-                            if(!arr1[i,j,k].Equals(arr2[i,j,k]))
+                            if(!arr1[i,j,k].Equals(arr2[i,j,k], 0.01f))
                             {
                                 ++ mismatch;
                             }
