@@ -27,9 +27,7 @@ namespace GPUVerb
         static extern void PlaneverbRemoveAABB(int gridId, PlaneVerbAABB aabb);
 
 
-        Cell[,,] m_grid;
         int m_numSamples;
-
 
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -39,28 +37,12 @@ namespace GPUVerb
         }
         public override void GenerateResponse(Vector3 listener)
         {
-            Profiler.BeginSample("FDTDRef.GenerateResponse");
-
             unsafe
             {
                 fixed(Cell* ptr = m_grid)
                 {
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
                 }
-            }
-
-            Profiler.EndSample();
-        }
-
-        public override IEnumerable<Cell> GetResponse(Vector2Int gridPos)
-        {
-            if(gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
-            {
-                yield break;
-            }
-            for(int i=0; i<m_numSamples; ++i)
-            {
-                yield return m_grid[gridPos.x, gridPos.y, i];
             }
         }
 

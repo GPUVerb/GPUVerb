@@ -34,7 +34,6 @@ namespace GPUVerb
         ComputeBuffer m_gridOutputBuf = null;
         ComputeBuffer m_gridInputBuf = null;
         ComputeBuffer m_gridBuf = null;
-        Cell[,,] m_grid = null;
 
         int m_FDTDKernel = -1;
         int m_ZeroKernel = -1;
@@ -44,7 +43,6 @@ namespace GPUVerb
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         float[] m_gaussianPulse;
         int m_gridSizeInCells1D = 0;
-
 
         public FDTD(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -153,17 +151,7 @@ namespace GPUVerb
             // copy m_gridBuf to grid
             m_gridBuf.GetData(m_grid);
         }
-        public override IEnumerable<Cell> GetResponse(Vector2Int gridPos)
-        {
-            if (gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
-            {
-                yield break;
-            }
-            for (int i = 0; i < GetResponseLength(); ++i)
-            {
-                yield return m_grid[gridPos.x, gridPos.y, i];
-            }
-        }
+
 
         void AddGeometryHelper(PlaneVerbAABB bounds)
         {

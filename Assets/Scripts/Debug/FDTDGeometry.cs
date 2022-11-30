@@ -16,8 +16,25 @@ namespace GPUVerb
         AbsorptionCoefficient m_absorption = AbsorptionCoefficient.Default;
 
         AbsorptionCoefficient m_lastAbsorption = AbsorptionCoefficient.Default;
-        Vector3 m_lastPos = Vector3.zero;
 
+        struct TransformState : IEquatable<TransformState>
+        {
+            public Quaternion rot;
+            public Vector3 pos;
+            public Vector3 scale;
+            public TransformState(Transform t)
+            {
+                rot = t.rotation;
+                pos = t.position;
+                scale = t.localScale;
+            }
+
+            public bool Equals(TransformState other)
+            {
+                return other.rot == rot && other.pos == pos && other.scale == scale;
+            }
+        }
+        TransformState m_lastTransformState = new TransformState();
 
         int m_geomID = -1;
         Collider m_collider = null;
@@ -30,16 +47,17 @@ namespace GPUVerb
             m_solver = GPUVerbContext.Instance.FDTDSolver;
             m_geomID = m_solver.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
 
-            m_lastPos = transform.position;
+            m_lastTransformState = new TransformState(transform);
             m_lastAbsorption = m_absorption;
         }
 
         private void Update()
         {
-            if(transform.position != m_lastPos)
+            TransformState curState = new TransformState(transform);
+            if (!curState.Equals(m_lastTransformState))
             {
                 m_solver.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
-                m_lastPos = transform.position;
+                m_lastTransformState = curState;
             }
 
             if (m_absorption != m_lastAbsorption)

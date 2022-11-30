@@ -84,6 +84,7 @@ namespace GPUVerb
         protected int m_responseLength;
         protected SortedDictionary<int, PlaneVerbAABB> m_geometries;
         protected int m_nextGeoID;
+        protected Cell[,,] m_grid;
 
         // TODO: remove ID
         protected int m_id;
@@ -111,7 +112,17 @@ namespace GPUVerb
         private FDTDBase() { }
         public virtual int GetResponseLength() => m_responseLength;
         public abstract void GenerateResponse(Vector3 listener);
-        public abstract IEnumerable<Cell> GetResponse(Vector2Int gridPos);
+        public IEnumerable<Cell> GetResponse(Vector2Int gridPos)
+        {
+            if (gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
+            {
+                yield break;
+            }
+            for (int i = 0; i < GetResponseLength(); ++i)
+            {
+                yield return m_grid[gridPos.x, gridPos.y, i];
+            }
+        }
         public virtual int AddGeometry(PlaneVerbAABB geom)
         {
             m_geometries.Add(m_nextGeoID, geom);
