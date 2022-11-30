@@ -660,7 +660,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_minCorner: {x: 0, y: 0}
-  m_maxCorner: {x: 20, y: 40}
+  m_maxCorner: {x: 20, y: 20}
 --- !u!4 &1396085961
 Transform:
   m_ObjectHideFlags: 0
