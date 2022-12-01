@@ -25,6 +25,9 @@ namespace GPUVerb
         private Vector2 m_minCorner = new Vector2(0, 0);
         [SerializeField]
         private Vector2 m_maxCorner = new Vector2(10, 10);
+        [SerializeField]
+        private bool m_useRefClass = true;
+
         private FDTDBase m_FDTDSolver = null;
         private AnalyzerBase m_AnalyzerSolver = null;
 
@@ -36,14 +39,29 @@ namespace GPUVerb
 
         private void Init()
         {
-            m_FDTDSolver = new FDTD(
-                new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
-                PlaneverbResolution.LowResolution);
-            m_AnalyzerSolver = new AnalyzerRef(
-                new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
-                m_FDTDSolver.GetGridSizeInCells(),
-                PlaneverbResolution.LowResolution,
-                m_FDTDSolver.ID);
+            if(m_useRefClass)
+            {
+                m_FDTDSolver = new FDTDRef(
+                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    PlaneverbResolution.LowResolution);
+                m_AnalyzerSolver = new AnalyzerRef(
+                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    m_FDTDSolver.GetGridSizeInCells(),
+                    PlaneverbResolution.LowResolution,
+                    m_FDTDSolver.ID);
+            }
+            else
+            {
+                m_FDTDSolver = new FDTD(
+                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    PlaneverbResolution.LowResolution);
+/*                m_AnalyzerSolver = new Analyzer(
+                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    m_FDTDSolver.GetGridSizeInCells(),
+                    PlaneverbResolution.LowResolution,
+                    m_FDTDSolver.ID);*/
+            }
+
         }
 
         private void OnDestroy()
