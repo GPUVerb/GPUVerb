@@ -4,23 +4,8 @@ using UnityEngine;
 
 namespace GPUVerb
 {
-    public class GPUVerbContext : MonoBehaviour
+    public class GPUVerbContext : SingletonBehavior<GPUVerbContext>
     {
-        public static GPUVerbContext Instance { get; private set; }
-        private static GPUVerbContext s_instance;
-        private void Awake()
-        {
-            if(Instance != null && Instance != this)
-            {
-                Destroy(this);
-            }
-            else
-            {
-                Instance = this;
-                Init();
-            }
-        }
-
         [SerializeField]
         private Vector2 m_minCorner = new Vector2(0, 0);
         [SerializeField]
@@ -37,7 +22,7 @@ namespace GPUVerb
         public FDTDBase FDTDSolver { get => m_FDTDSolver; }
         public AnalyzerBase AnalyzerSolver { get => m_AnalyzerSolver; }
 
-        private void Init()
+        protected override void Init()
         {
             if(m_useRefClass)
             {
@@ -61,7 +46,28 @@ namespace GPUVerb
                     PlaneverbResolution.LowResolution,
                     m_FDTDSolver.ID);*/
             }
+        }
 
+        public Vector2Int ToGridPos(Vector2 worldPos)
+        {
+            return m_FDTDSolver.ToGridPos(worldPos);
+        }
+
+        public AnalyzerResult? GetOutput(Vector2Int pos)
+        {
+            if(m_FDTDSolver == null)
+            {
+                Debug.LogError("FDTD Solver not set");
+                return null;
+            }
+            if (m_AnalyzerSolver == null)
+            {
+                Debug.LogError("Analyzer not set");
+                return null;
+            }
+            m_FDTDSolver.GenerateResponse(Listener.Position);
+            m_AnalyzerSolver.AnalyzeResponses(Listener.Position);
+            return m_AnalyzerSolver.GetAnalyzerResponse(pos);
         }
 
         private void OnDestroy()

@@ -21,7 +21,6 @@ namespace GPUVerb
         [SerializeField]
         float m_simTime = 4f;
         
-        [SerializeField]
         Transform m_listener = null;
 
         bool m_simFinished = true;
@@ -45,6 +44,8 @@ namespace GPUVerb
         // Start is called before the first frame update
         private void Start()
         {
+            m_listener = Listener.Instance.transform;
+
             Vector2 minCorner = GPUVerbContext.Instance.MinCorner;
             Vector2 maxCorner = GPUVerbContext.Instance.MaxCorner;
 

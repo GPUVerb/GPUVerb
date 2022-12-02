@@ -44,8 +44,8 @@ namespace GPUVerb
                 fixed(Cell* ptr = m_grid)
                 {
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
-                    Vector2Int temp = ToGridPos(new Vector2(18, 5));
-                    Debug.Log("FDTD: " + m_grid[temp.x, temp.y, m_numSamples - 1]);
+/*                    Vector2Int temp = ToGridPos(new Vector2(18, 5));
+                    Debug.Log("FDTD: " + m_grid[temp.x, temp.y, m_numSamples - 1]);*/
                 }
             }
         }

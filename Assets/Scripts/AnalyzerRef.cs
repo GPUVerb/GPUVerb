@@ -75,20 +75,7 @@ namespace GPUVerb
 
                     Debug.Log("Analyzer done " );
 
-                    FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
-                    Vector2Int temp = FDTDsolver.ToGridPos(new Vector2(18, 5));
-
-                    AnalyzerResult ptr_temp =  new AnalyzerResult();
-                    AnalyzerResult* input = &ptr_temp;
-
-                    PlaneverbGetOneAnalyzerResponse(m_id, 18.0f, 0.0f, 5.0f, (IntPtr)input);
-                    Debug.Log("Analyzer: " + input[0].occlusion);
-
                     PlaneverbGetAnalyzerResponses(m_id, (IntPtr)ptr);
-                    Debug.Log("Analyzer: " + m_AnalyzerGrid[temp.x, temp.y].occlusion);
-
-                    Debug.Log("onsetSample: " + PlaneverbGetEdry(m_id,(uint) (temp.x * gridSizeInCells.y + temp.y)));
-                    Debug.Log("numSamples: " + PlaneverbGetEFree(m_id, (uint)(temp.x * gridSizeInCells.y + temp.y)));
                 }
             }
 
