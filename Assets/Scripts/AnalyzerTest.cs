@@ -90,41 +90,26 @@ namespace GPUVerb
             }
         }
 
-        IEnumerator Simulate()
+        void Simulate()
         {
-            m_simFinished = false;
+            GetData();
 
-            for (float curTime = 0; curTime <= m_simTime; curTime += Time.deltaTime)
+            foreach (AnalyzerInfo info in m_cubeInfos)
             {
-                GetData();
-
-                foreach (AnalyzerInfo info in m_cubeInfos)
-                {
-                    AnalyzerResult data = info.cur;
-                    float wetGain = data.wetGain;
-                    //Debug.Log(occlusion);
-                    float h = m_baseHeight + m_motionScale * wetGain;
-                    info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
-                }
-                yield return new WaitForEndOfFrame();
+                AnalyzerResult data = info.cur;
+                float occlusion = data.occlusion;
+                //Debug.Log(occlusion);
+                float h = m_baseHeight + m_motionScale * occlusion;
+                info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
             }
 
-            m_simFinished = true;
         }
 
         private void OnGUI()
         {
-            if (m_simFinished)
+            if (GUILayout.Button("Play"))
             {
-                if (GUILayout.Button("Play"))
-                {
-                    StopAllCoroutines();
-                    StartCoroutine(Simulate());
-                }
-            }
-            else
-            {
-                GUILayout.Label("Simulating...");
+                Simulate();
             }
         }
 

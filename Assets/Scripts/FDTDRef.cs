@@ -27,6 +27,7 @@ namespace GPUVerb
         static extern void PlaneverbRemoveAABB(int gridId, PlaneVerbAABB aabb);
 
 
+
         int m_numSamples;
 
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
@@ -43,6 +44,8 @@ namespace GPUVerb
                 fixed(Cell* ptr = m_grid)
                 {
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
+                    Vector2Int temp = ToGridPos(new Vector2(18, 5));
+                    Debug.Log("FDTD: " + m_grid[temp.x, temp.y, m_numSamples - 1]);
                 }
             }
         }

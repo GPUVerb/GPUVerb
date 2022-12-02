@@ -42,10 +42,10 @@ namespace GPUVerb
             if(m_useRefClass)
             {
                 m_FDTDSolver = new FDTDRef(
-                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    new Vector2Int(Mathf.RoundToInt(m_maxCorner.x), Mathf.RoundToInt(m_maxCorner.y)),
                     PlaneverbResolution.LowResolution);
                 m_AnalyzerSolver = new AnalyzerRef(
-                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
+                    new Vector2Int(Mathf.RoundToInt(m_maxCorner.x), Mathf.RoundToInt(m_maxCorner.y)),
                     m_FDTDSolver.GetGridSizeInCells(),
                     PlaneverbResolution.LowResolution,
                     m_FDTDSolver.ID);
