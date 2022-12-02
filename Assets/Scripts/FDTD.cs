@@ -42,7 +42,6 @@ namespace GPUVerb
 
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         float[] m_gaussianPulse;
-        int m_gridSizeInCells1D = 0;
 
         public FDTD(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -68,9 +67,6 @@ namespace GPUVerb
 
             m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, GetResponseLength()];
 
-            m_gridSizeInCells1D = totalSize;
-
-
             m_gaussianPulse = new float[numSamples];
             float sigma = 1.0f / (0.5f * Mathf.PI * (float)res);
             float delay = 2 * sigma;
@@ -82,15 +78,12 @@ namespace GPUVerb
             }
 
             m_gaussianBuffer.SetData(m_gaussianPulse);
-
-            // initialize the input grid by "removing" the bounds spanning the whole grid, i.e. no geometries
-            RemoveGeometryHelper(
-                new PlaneVerbAABB(
-                    new Vector2(gridSize.x / 2, gridSize.y / 2),
-                    gridSize.x, gridSize.y, 
-                    AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)
-                )
-            );
+            Cell[] gridInitValue = new Cell[m_gridSizeInCells.x * m_gridSizeInCells.y];
+            for(int i=0; i< gridInitValue.Length; ++i)
+            {
+                gridInitValue[i].b = gridInitValue[i].by = 1;
+            }
+            m_gridInputBuf.SetData(gridInitValue);
         }
 
         Vector2Int GetDispatchDim(Vector2Int inputDim)

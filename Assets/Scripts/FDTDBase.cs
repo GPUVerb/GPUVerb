@@ -39,9 +39,9 @@ namespace GPUVerb
         }
         public bool Equals(Cell other, float tolerance)
         {
-            return Mathf.Approximately(tolerance, Mathf.Abs(pressure - other.pressure)) &&
-                   Mathf.Approximately(tolerance, Mathf.Abs(velX - other.velX)) &&
-                   Mathf.Approximately(tolerance, Mathf.Abs(velY - other.velY)) &&
+            return Mathf.Abs(pressure - other.pressure) <= tolerance &&
+                   Mathf.Abs(velX - other.velX) <= tolerance &&
+                   Mathf.Abs(velY - other.velY) <= tolerance &&
                    b == other.b && by == other.by;
         }
         public override string ToString()

@@ -38,7 +38,7 @@ namespace GPUVerb
 
         private void Awake()
         {
-            // FDTDUnitTest();
+            FDTDUnitTest();
         }
 
 
@@ -184,25 +184,40 @@ namespace GPUVerb
 
         private void FDTDUnitTest()
         {
-            bool Check(Cell[,,] arr1, Cell[,,] arr2)
+            // checks the similarity of two grids
+            // and return the time step when two grids have the most difference
+            bool Check(Cell[,,] arr1, Cell[,,] arr2, float tolerance, out int idx)
             {
-                int mismatch = 0;
-                for(int i=0; i<arr1.GetLength(0); ++i)
+                int mostMismatchIdx = -1;
+                int maxMismatch = 0;
+
+
+                for (int k = 0; k < arr1.GetLength(2); ++k)
                 {
-                    for(int j=0; j<arr1.GetLength(1); ++j)
+                    int curMismatch = 0;
+
+                    for (int i = 0; i < arr1.GetLength(0); ++i)
                     {
-                        for(int k=0; k<arr1.GetLength(2); ++k)
+                        for (int j = 0; j < arr1.GetLength(1); ++j)
                         {
-                            if(!arr1[i,j,k].Equals(arr2[i,j,k], 0.01f))
+                            if (!arr1[i, j, k].Equals(arr2[i, j, k], tolerance))
                             {
-                                ++ mismatch;
+                                ++curMismatch;
                             }
                         }
                     }
+
+                    if (curMismatch > maxMismatch)
+                    {
+                        maxMismatch = curMismatch;
+                        mostMismatchIdx = k;
+                    }
                 }
-                if(mismatch > 0)
+
+
+                idx = mostMismatchIdx;
+                if (mostMismatchIdx != -1)
                 {
-                    Debug.LogError($"{mismatch} out of {arr1.GetLength(0) * arr1.GetLength(1) * arr1.GetLength(2)}");
                     return false;
                 }
                 return true;
@@ -215,7 +230,6 @@ namespace GPUVerb
             Vector2Int gridSizeInCells = correct.GetGridSizeInCells();
             int numSamples = correct.GetResponseLength();
 
-
             Debug.Assert(gridSizeInCells == fdtd.GetGridSizeInCells());
             Debug.Assert(numSamples == fdtd.GetResponseLength());
 
@@ -225,37 +239,39 @@ namespace GPUVerb
             correct.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
             fdtd.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
 
-            correct.GenerateResponse(Vector3.zero);
-            fdtd.GenerateResponse(Vector3.zero);
 
-            for (int x = 0; x < gridSizeInCells.x; ++x)
+            void GetResponse(Cell[,,] input1, Cell[,,] input2)
             {
-                for(int y = 0; y < gridSizeInCells.y; ++y)
+                correct.GenerateResponse(Vector3.zero);
+                fdtd.GenerateResponse(Vector3.zero);
+
+                for (int x = 0; x < gridSizeInCells.x; ++x)
                 {
-                    int z = 0;
-                    foreach(Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                    for (int y = 0; y < gridSizeInCells.y; ++y)
                     {
-                        c1[x, y, z] = c;
-                        ++ z;
-                    }
-                    z = 0;
-                    foreach (Cell c in fdtd.GetResponse(new Vector2Int(x, y)))
-                    {
-                        c2[x, y, z] = c;
-                        ++z;
+                        int z = 0;
+                        foreach (Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                        {
+                            input1[x, y, z] = c;
+                            ++z;
+                        }
+                        z = 0;
+                        foreach (Cell c in fdtd.GetResponse(new Vector2Int(x, y)))
+                        {
+                            input2[x, y, z] = c;
+                            ++z;
+                        }
                     }
                 }
             }
 
-            if(Check(c1, c2))
+            GetResponse(c1, c2);
+            if (!Check(c1, c2, 0.1f, out int iter))
             {
-                Debug.Log("FDTD unit test passed");
-            }
-            else
-            {
+                Debug.Log("Mismatch:");
+
                 StringBuilder sb1 = new StringBuilder();
                 StringBuilder sb2 = new StringBuilder();
-                int iter = numSamples - 1;
                 for (int x = 0; x < gridSizeInCells.x; ++x)
                 {
                     for (int y = 0; y < gridSizeInCells.y; ++y)
@@ -267,9 +283,31 @@ namespace GPUVerb
                 }
                 Debug.Log(sb1.ToString());
                 Debug.Log(sb2.ToString());
-                Debug.Log("FDTD unit test failed");
             }
-           
+
+            Cell[,,] last1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
+            Cell[,,] last2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
+            int linearSize = gridSizeInCells.x * gridSizeInCells.y * numSamples;
+            for (int i=0; i<10; ++i)
+            {
+                GetResponse(c1, c2);
+
+                if(i > 0)
+                {
+                    if(!Check(c1, last1, 0.0001f, out int _))
+                    {
+                        Debug.Log("Data inconsistency detected in Planverb FDTD");   
+                    }
+                    if(!Check(c2, last2, 0.0001f, out int _))
+                    {
+                        Debug.Log("Data inconsistency detected in GPU FDTD");
+                    }
+                }
+
+                Array.Copy(c1, last1, linearSize);
+                Array.Copy(c2, last2, linearSize);
+            }
+
             correct.Dispose();
             fdtd.Dispose();
         }
