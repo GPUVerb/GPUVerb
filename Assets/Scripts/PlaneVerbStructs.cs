@@ -10,6 +10,11 @@ namespace GPUVerb
         HighResolution = 500,
         ExtremeResolution = 750,
     };
+    public enum SourceDirectivityPattern
+    {
+        Omni,
+        Cardioid
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct PlaneVerbVec2

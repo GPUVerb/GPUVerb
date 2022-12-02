@@ -11,16 +11,20 @@ namespace GPUVerb
         [SerializeField]
         private Vector2 m_maxCorner = new Vector2(10, 10);
         [SerializeField]
+        private DSPConfig m_dspConfig = new DSPConfig();
+        
+        [SerializeField]
         private bool m_useRefClass = true;
 
         private FDTDBase m_FDTDSolver = null;
         private AnalyzerBase m_AnalyzerSolver = null;
-
+        private DSPBase m_DSP = null;
 
         public Vector2 MinCorner { get => m_minCorner; }
         public Vector2 MaxCorner { get => m_maxCorner; }
         public FDTDBase FDTDSolver { get => m_FDTDSolver; }
         public AnalyzerBase AnalyzerSolver { get => m_AnalyzerSolver; }
+        public DSPBase DSP { get => m_DSP; }
 
         protected override void Init()
         {
@@ -34,17 +38,13 @@ namespace GPUVerb
                     m_FDTDSolver.GetGridSizeInCells(),
                     PlaneverbResolution.LowResolution,
                     m_FDTDSolver.ID);
+                m_DSP = new DSPRef(m_dspConfig);
             }
             else
             {
                 m_FDTDSolver = new FDTD(
                     new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                     PlaneverbResolution.LowResolution);
-/*                m_AnalyzerSolver = new Analyzer(
-                    new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
-                    m_FDTDSolver.GetGridSizeInCells(),
-                    PlaneverbResolution.LowResolution,
-                    m_FDTDSolver.ID);*/
             }
         }
 
@@ -69,7 +69,6 @@ namespace GPUVerb
             m_AnalyzerSolver.AnalyzeResponses(Listener.Position);
             return m_AnalyzerSolver.GetAnalyzerResponse(pos);
         }
-
         private void OnDestroy()
         {
             if(m_FDTDSolver != null)
