@@ -90,7 +90,7 @@ namespace GPUVerb
             int cnt = 0;
             Trav(solver, -1, (Cell c) =>
             {
-                if (Mathf.Approximately(0, c.pressure))
+                if (Math.Equals(0, c.pressure))
                     ++cnt;
             });
 
@@ -125,9 +125,9 @@ namespace GPUVerb
                     }
 
                     Cell data = info.cur.Current;
-                    float pr = data.pressure;
-                    float h = m_baseHeight + m_motionScale * pr;
-                    info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
+                    double pr = data.pressure;
+                    double h = m_baseHeight + m_motionScale * pr;
+                    info.ins.transform.position = new Vector3(info.pos.x, (float)h, info.pos.y);
                 }
 
                 lastSample = sample;

@@ -11,7 +11,7 @@ namespace GPUVerb
     public class AnalyzerRef : AnalyzerBase
     {
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern void PlaneverbCreateConfig(float sizeX, float sizeY, int gridResolution);
+        static extern void PlaneverbCreateConfig(double sizeX, double sizeY, int gridResolution);
 
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern int PlaneverbCreateEmissionManager();
@@ -29,20 +29,20 @@ namespace GPUVerb
         static extern void PlaneverbDestroyAnalyzer(int id);
 
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern void PlaneverbAnalyzeResponses(int id, float listenerX, float listenerZ);
+        static extern void PlaneverbAnalyzeResponses(int id, double listenerX, double listenerZ);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern PlaneVerbOutput PlaneverbGetOutputWithID(int id, int emissionID);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern void PlaneverbGetOneAnalyzerResponse(int id, float emitterX, float emitterY, float emitterZ, IntPtr result);
+        static extern void PlaneverbGetOneAnalyzerResponse(int id, double emitterX, double emitterY, double emitterZ, IntPtr result);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbGetAnalyzerResponses(int gridId, IntPtr results);
 
 
         //Debug
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern float PlaneverbGetEdry(int gridId, uint serialIndex);
+        static extern double PlaneverbGetEdry(int gridId, uint serialIndex);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern float PlaneverbGetEFree(int gridId, uint serialIndex);
+        static extern double PlaneverbGetEFree(int gridId, uint serialIndex);
 
         AnalyzerResult[,] m_AnalyzerGrid;
         Vector2Int gridSizeInCells;
@@ -76,19 +76,21 @@ namespace GPUVerb
                     Debug.Log("Analyzer done " );
 
                     FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
-                    Vector2Int temp = FDTDsolver.ToGridPos(new Vector2(18, 5));
+                    Vector2Int temp = FDTDsolver.ToGridPos(new Vector2(5, 0));
 
                     AnalyzerResult ptr_temp =  new AnalyzerResult();
                     AnalyzerResult* input = &ptr_temp;
 
-                    PlaneverbGetOneAnalyzerResponse(m_id, 18.0f, 0.0f, 5.0f, (IntPtr)input);
+                    PlaneverbGetOneAnalyzerResponse(m_id, 5.0f, 0.0f, 0.0f, (IntPtr)input);
                     Debug.Log("Analyzer: " + input[0].occlusion);
 
                     PlaneverbGetAnalyzerResponses(m_id, (IntPtr)ptr);
                     Debug.Log("Analyzer: " + m_AnalyzerGrid[temp.x, temp.y].occlusion);
 
-                    Debug.Log("onsetSample: " + PlaneverbGetEdry(m_id,(uint) (temp.x * gridSizeInCells.y + temp.y)));
-                    Debug.Log("numSamples: " + PlaneverbGetEFree(m_id, (uint)(temp.x * gridSizeInCells.y + temp.y)));
+                    //Debug.Log("In Game X: " + 19.0f/ FDTDsolver.GetCellSize());
+                    //Debug.Log("In Game Y: " + 0.0f / FDTDsolver.GetCellSize());
+                    Debug.Log("Pressue: " + PlaneverbGetEdry(m_id,(uint) (temp.x * gridSizeInCells.y + temp.y)));
+                    Debug.Log("OnsetSample: " + PlaneverbGetEFree(m_id, (uint)(temp.x * gridSizeInCells.y + temp.y)));
                 }
             }
 

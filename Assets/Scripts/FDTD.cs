@@ -121,7 +121,7 @@ namespace GPUVerb
             // bind boundary
             m_shader.SetBuffer(m_FDTDKernel, k_boundariesShaderParam, m_boundaryBuffer);
             // bind courant
-            m_shader.SetFloat(k_courantShaderParam, k_soundSpeed * m_dt / m_cellSize);
+            m_shader.SetFloat(k_courantShaderParam, (float)(k_soundSpeed * m_dt / m_cellSize));
             // bind listener pos
             m_shader.SetFloats(k_listenerPosShaderParam, new float[] { listenerPosGrid.x, listenerPosGrid.y });
             // bind gaussian pulse
@@ -156,7 +156,7 @@ namespace GPUVerb
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
             m_shader.SetInts(k_updateDimShaderParam, new int[] { boundsMin.x, boundsMin.y, boundsMax.x, boundsMax.y });
-            m_shader.SetFloat(k_absorptionShaderParam, bounds.absorption);
+            m_shader.SetFloat(k_absorptionShaderParam, (float)(bounds.absorption));
             m_shader.SetBuffer(m_addGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
             m_shader.SetBuffer(m_addGeomKernel, k_gridOutShaderParam, m_gridInputBuf);
 

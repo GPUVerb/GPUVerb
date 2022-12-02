@@ -12,13 +12,13 @@ namespace GPUVerb
     public class FDTDRef : FDTDBase
     {
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern int PlaneverbCreateGrid(float sizeX, float sizeY, int gridResolution);
+        static extern int PlaneverbCreateGrid(double sizeX, double sizeY, int gridResolution);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbDestroyGrid(int id);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern int PlaneverbGetGridResponseLength(int id);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern void PlaneverbGetGridResponse(int gridId, float listenerX, float listenerZ, IntPtr result);
+        static extern void PlaneverbGetGridResponse(int gridId, double listenerX, double listenerZ, IntPtr result);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbAddAABB(int gridId, PlaneVerbAABB aabb);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
@@ -44,7 +44,7 @@ namespace GPUVerb
                 fixed(Cell* ptr = m_grid)
                 {
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
-                    Vector2Int temp = ToGridPos(new Vector2(18, 5));
+                    Vector2Int temp = ToGridPos(new Vector2(5, 0));
                     Debug.Log("FDTD: " + m_grid[temp.x, temp.y, m_numSamples - 1]);
                 }
             }

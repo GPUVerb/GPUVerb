@@ -19,7 +19,7 @@ namespace GPUVerb
         [SerializeField]
         float m_motionScale = 10;
         [SerializeField]
-        float m_simTime = 4f;
+        float m_simTime = 5f;
 
         [SerializeField]
         Transform m_listener = null;
@@ -97,10 +97,10 @@ namespace GPUVerb
             foreach (AnalyzerInfo info in m_cubeInfos)
             {
                 AnalyzerResult data = info.cur;
-                float occlusion = data.occlusion;
+                double occlusion = data.occlusion;
                 //Debug.Log(occlusion);
-                float h = m_baseHeight + m_motionScale * occlusion;
-                info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
+                double h = m_baseHeight + m_motionScale * occlusion;
+                info.ins.transform.position = new Vector3(info.pos.x, (float)h, info.pos.y);
             }
 
         }

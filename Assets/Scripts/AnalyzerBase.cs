@@ -10,19 +10,19 @@ namespace GPUVerb
     public struct AnalyzerResult : IEquatable<AnalyzerResult>
     {
         [FieldOffset(0)]
-        public float occlusion; // Dry Gain
-        [FieldOffset(4)]
-        public float wetGain;     // Wet Gain
+        public double occlusion; // Dry Gain
         [FieldOffset(8)]
-        public float rt60;     // RT60, the time that the sound decay to 60dB
-        [FieldOffset(12)]
-        public float lowpassIntensity; // Low pass filter
+        public double wetGain;     // Wet Gain
         [FieldOffset(16)]
-        public PlaneVerbVec2 direction; // direction
+        public double rt60;     // RT60, the time that the sound decay to 60dB
         [FieldOffset(24)]
+        public double lowpassIntensity; // Low pass filter
+        [FieldOffset(32)]
+        public PlaneVerbVec2 direction; // direction
+        [FieldOffset(48)]
         public PlaneVerbVec2 sourceDirectivity; // sound directivity
 
-        public AnalyzerResult(float occlusion = 0, float wetGain = 0, float rt60 = 0, float lowpassIntensity = 1)
+        public AnalyzerResult(double occlusion = 0, double wetGain = 0, double rt60 = 0, double lowpassIntensity = 1)
         {
             this.occlusion = occlusion;
             this.wetGain = wetGain;
@@ -34,14 +34,14 @@ namespace GPUVerb
 
         public bool Equals(AnalyzerResult other)
         {
-            return Mathf.Approximately(occlusion, other.occlusion) &&
-                Mathf.Approximately(wetGain, other.wetGain) &&
-                Mathf.Approximately(rt60, other.rt60) &&
-                Mathf.Approximately(lowpassIntensity, other.lowpassIntensity) &&
-                Mathf.Approximately(direction.x, other.direction.x) &&
-                Mathf.Approximately(direction.y, other.direction.y) &&
-                Mathf.Approximately(sourceDirectivity.x, other.sourceDirectivity.x) &&
-                Mathf.Approximately(sourceDirectivity.y, other.sourceDirectivity.y);
+            return Math.Equals(occlusion, other.occlusion) &&
+                Math.Equals(wetGain, other.wetGain) &&
+                Math.Equals(rt60, other.rt60) &&
+                Math.Equals(lowpassIntensity, other.lowpassIntensity) &&
+                Math.Equals(direction.x, other.direction.x) &&
+                Math.Equals(direction.y, other.direction.y) &&
+                Math.Equals(sourceDirectivity.x, other.sourceDirectivity.x) &&
+                Math.Equals(sourceDirectivity.y, other.sourceDirectivity.y);
         }
 
         public override string ToString()
@@ -67,7 +67,7 @@ namespace GPUVerb
         protected uint m_gridY;
         protected int m_responseLength;
         protected uint m_samplingRate;
-        protected float m_dx;
+        protected double m_dx;
         protected int m_numThreads;
         protected int m_resolution;
         protected int m_id;

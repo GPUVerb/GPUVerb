@@ -11,17 +11,17 @@ namespace GPUVerb
     public struct Cell : IEquatable<Cell>
     {
         [FieldOffset(0)]
-        public float pressure; // air pressure
-        [FieldOffset(4)]
-        public float velX;     // x component of particle velocity
+        public double pressure; // air pressure
         [FieldOffset(8)]
-        public float velY;     // y component of particle velocity
-        [FieldOffset(12)][MarshalAs(UnmanagedType.I2)]
+        public double velX;     // x component of particle velocity
+        [FieldOffset(16)]
+        public double velY;     // y component of particle velocity
+        [FieldOffset(24)][MarshalAs(UnmanagedType.I2)]
         public short b;        // B field packed into 2 2 byte fields
-        [FieldOffset(14)][MarshalAs(UnmanagedType.I2)]
+        [FieldOffset(32)][MarshalAs(UnmanagedType.I2)]
         public short by;       // B field packed into 2 2 byte fields
 
-        public Cell(float pressure = 0, float velX = 0, float velY = 0, short b = 1, short by = 1)
+        public Cell(double pressure = 0, double velX = 0, double velY = 0, short b = 1, short by = 1)
         {
             this.pressure = pressure;
             this.velX = velX;
@@ -32,16 +32,16 @@ namespace GPUVerb
 
         public bool Equals(Cell other)
         {
-            return Mathf.Approximately(pressure, other.pressure) &&
-                Mathf.Approximately(velX, other.velX) &&
-                Mathf.Approximately(velY, other.velY) &&
+            return Math.Equals(pressure, other.pressure) &&
+                Math.Equals(velX, other.velX) &&
+                Math.Equals(velY, other.velY) &&
                 b == other.b && by == other.by;
         }
-        public bool Equals(Cell other, float tolerance)
+        public bool Equals(Cell other, double tolerance)
         {
-            return Mathf.Abs(pressure - other.pressure) <= tolerance &&
-                   Mathf.Abs(velX - other.velX) <= tolerance &&
-                   Mathf.Abs(velY - other.velY) <= tolerance &&
+            return Math.Abs(pressure - other.pressure) <= tolerance &&
+                   Math.Abs(velX - other.velX) <= tolerance &&
+                   Math.Abs(velY - other.velY) <= tolerance &&
                    b == other.b && by == other.by;
         }
         public override string ToString()
@@ -64,8 +64,8 @@ namespace GPUVerb
     [StructLayout(LayoutKind.Sequential)]
     public struct BoundaryInfo
     {
-        public float absorption;
-        public BoundaryInfo(float absorption = 0)
+        public double absorption;
+        public BoundaryInfo(double absorption = 0)
         {
             this.absorption = absorption;
         }
@@ -101,15 +101,15 @@ namespace GPUVerb
             public PlaneVerbAABB bounds;
         }
 
-        protected const float k_soundSpeed = 343.21f;
-        protected const float k_pointsPerWaveLength = 3.5f;
+        protected const double k_soundSpeed = 343.21f;
+        protected const double k_pointsPerWaveLength = 3.5f;
 
         protected Vector2 m_gridSize;
         protected Vector2Int m_gridSizeInCells;
-        protected float m_cellSize;
-        protected float m_dt;
+        protected double m_cellSize;
+        protected double m_dt;
         protected uint m_samplingRate;
-        protected float m_numSecsPerResponse;
+        protected double m_numSecsPerResponse;
         protected int m_responseLength;
 
         #region Geometry Data
@@ -128,17 +128,17 @@ namespace GPUVerb
         {
             m_gridSize = gridSize;
 
-            float minWavelength = k_soundSpeed / (float)res;
+            double minWavelength = k_soundSpeed / (double)res;
             m_cellSize = minWavelength / k_pointsPerWaveLength;
             m_dt = m_cellSize / (k_soundSpeed * 1.5f);
             m_samplingRate = (uint)(1.0f / m_dt);
 
             m_gridSizeInCells = new Vector2Int(
-                    Mathf.CeilToInt(gridSize.x / m_cellSize),
-                    Mathf.CeilToInt(gridSize.y / m_cellSize)
+                    (int)Math.Ceiling(gridSize.x / m_cellSize),
+                    (int)Math.Ceiling(gridSize.y / m_cellSize)
                 );
 
-            const float domainSize = 25; // TODO: 25m, may make this tweakable later
+            const double domainSize = 25; // TODO: 25m, may make this tweakable later
             m_numSecsPerResponse = domainSize / (Mathf.Sqrt(2) * k_soundSpeed) + 0.25f;
             m_responseLength = (int)(m_samplingRate * m_numSecsPerResponse);
 
@@ -252,13 +252,13 @@ namespace GPUVerb
         public Vector2Int ToGridPos(Vector2 pos)
         {
             return new Vector2Int(
-                Mathf.Clamp(Mathf.FloorToInt(pos.x / m_cellSize), 0, m_gridSizeInCells.x - 1),
-                Mathf.Clamp(Mathf.FloorToInt(pos.y / m_cellSize), 0, m_gridSizeInCells.y - 1)
+                (int)Math.Clamp(Math.Floor(pos.x / m_cellSize), 0, m_gridSizeInCells.x - 1),
+                (int)Math.Clamp(Math.Floor(pos.y / m_cellSize), 0, m_gridSizeInCells.y - 1)
             );
         }
 
         public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
-        public float GetCellSize() => m_cellSize;
+        public double GetCellSize() => m_cellSize;
         public abstract void Dispose();
 
         #region DEBUG
