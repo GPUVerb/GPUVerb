@@ -39,8 +39,10 @@ namespace GPUVerb
         public float wetGain;
         public float rt60;
         public float lowpass;
-        public PlaneVerbVec2 direction;
-        public PlaneVerbVec2 sourceDirectivity;
+        public float directionX;
+        public float directionY;
+        public float sourceDirectivityX;
+        public float sourceDirectivityY;
     }
 
     [StructLayout(LayoutKind.Sequential)]

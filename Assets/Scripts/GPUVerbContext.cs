@@ -55,7 +55,7 @@ namespace GPUVerb
 
         public AnalyzerResult? GetOutput(Vector2Int pos)
         {
-            if(m_FDTDSolver == null)
+            if (m_FDTDSolver == null)
             {
                 Debug.LogError("FDTD Solver not set");
                 return null;

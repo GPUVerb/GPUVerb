@@ -13,10 +13,10 @@ namespace GPUVerb
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbCreateConfig(float sizeX, float sizeY, int gridResolution);
 
-        [DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        /*[DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern int PlaneverbCreateEmissionManager();
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern void PlaneverbDestroyEmissionManager(int id);
+        static extern void PlaneverbDestroyEmissionManager(int id);*/
 
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern int PlaneverbCreateFreeGrid();
@@ -30,8 +30,10 @@ namespace GPUVerb
 
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbAnalyzeResponses(int id, float listenerX, float listenerZ);
+        /*[DllImport("ProjectPlaneverbUnityPlugin.dll")]
+        static extern PlaneVerbOutput PlaneverbGetOutputWithID(int id, int emissionID);*/
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
-        static extern PlaneVerbOutput PlaneverbGetOutputWithID(int id, int emissionID);
+        static extern PlaneVerbOutput PlaneverbGetOneOutputWithEmitterPosition(int gridId, float emitterX, float emitterY, float emitterZ);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbGetOneAnalyzerResponse(int id, float emitterX, float emitterY, float emitterZ, IntPtr result);
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
@@ -53,8 +55,8 @@ namespace GPUVerb
             this.gridSizeInCells = in_gridSizeInCells;
             PlaneverbCreateConfig(gridSize.x, gridSize.y, (int)res);
 
-            m_id = PlaneverbCreateEmissionManager();
-            Debug.Assert(m_id == gridId);
+            /*m_id = PlaneverbCreateEmissionManager();
+            Debug.Assert(m_id == gridId);*/
 
             m_id = PlaneverbCreateFreeGrid();
             Debug.Assert(m_id == gridId);
@@ -96,7 +98,7 @@ namespace GPUVerb
 
         public override void Dispose()
         {
-            PlaneverbDestroyEmissionManager(m_id);
+            // PlaneverbDestroyEmissionManager(m_id);
             PlaneverbDestroyFreeGrid(m_id);
             PlaneverbDestroyAnalyzer(m_id);
         }
