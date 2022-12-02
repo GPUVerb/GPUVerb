@@ -186,7 +186,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 494158169}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.58, y: 0, z: 0.9}
+  m_LocalPosition: {x: 5.53, y: 0, z: 4.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -596,7 +596,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_minCorner: {x: 0, y: 0}
-  m_maxCorner: {x: 3, y: 3}
+  m_maxCorner: {x: 10, y: 10}
   m_useRefClass: 1
 --- !u!4 &1396085961
 Transform:
@@ -671,7 +671,6 @@ MonoBehaviour:
   m_baseHeight: 0
   m_motionScale: 10
   m_simTime: 5
-  m_listener: {fileID: 494158170}
 --- !u!114 &1861659889
 MonoBehaviour:
   m_ObjectHideFlags: 0
