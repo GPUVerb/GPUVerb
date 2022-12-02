@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace GPUVerb
         public float wetGainRatio;
     }
 
-    public abstract class DSPBase
+    public abstract class DSPBase : IDisposable
     {
         public static int k_maxFrameLen = 4096;
 
@@ -34,5 +35,6 @@ namespace GPUVerb
         public abstract void SetEmitterDirectivityPattern(int id, SourceDirectivityPattern pattern);
         public abstract void SendSource(int id, in AnalyzerResult param, float[] data, int numSamples, int channels);
         public abstract float[] GetOutput(ReverbIndex reverb);
+        public abstract void Dispose();
     }
 }

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace GPUVerb
 {
     // wrapper for the planeverb DSP.
-    public class DSPRef : DSPBase, IDisposable
+    public class DSPRef : DSPBase
     {
 		#region DLL Interface
 		private const string DLLNAME = "PlaneverbDSPUnityPlugin";
@@ -64,7 +64,7 @@ namespace GPUVerb
 			PlaneverbDSPInit(config.maxCallbackLength, config.samplingRate, 
 				config.dspSmoothingFactor, config.useSpatialization, config.wetGainRatio);
 		}
-		public void Dispose()
+		public override void Dispose()
 		{
 			PlaneverbDSPExit();
 		}
@@ -104,7 +104,7 @@ namespace GPUVerb
 				return null;
             }
 
-			if (reverb == ReverbIndex.INVALID)
+			if (reverb == ReverbIndex.COUNT)
             {
 				return null;
 			}
@@ -118,6 +118,7 @@ namespace GPUVerb
 			Marshal.Copy(result, buf, 0, k_maxFrameLen);
 			return buf;
 		}
+
     }
 
 }

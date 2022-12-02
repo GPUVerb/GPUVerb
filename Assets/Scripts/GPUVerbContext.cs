@@ -79,6 +79,10 @@ namespace GPUVerb
             {
                 m_AnalyzerSolver.Dispose();
             }
+            if(m_DSP != null)
+            {
+                m_DSP.Dispose();
+            }
         }
 
         private void OnDrawGizmos()
