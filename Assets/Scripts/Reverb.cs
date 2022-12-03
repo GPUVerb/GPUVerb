@@ -16,14 +16,8 @@ namespace GPUVerb
 		// a value on the range [0, 3), represents the index into the output fetcher array
 		[SerializeField]
 		ReverbIndex m_index = ReverbIndex.COUNT;
-		
-		[SerializeField]
-		bool m_isDry = false;
-		
 		private static int m_runtimeIndex = 0;
-
 		private HashSet<Emitter> m_emitters = new HashSet<Emitter>();
-		private Emitter[] m_audioThreadSources = new Emitter[1024];
 
 		public void AddEmitter(Emitter emitter)
         {

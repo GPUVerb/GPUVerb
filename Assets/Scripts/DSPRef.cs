@@ -85,8 +85,11 @@ namespace GPUVerb
         {
 			PlaneverbDSPUpdateEmitter(id, pos.x, pos.y, pos.z, forward.x, forward.y, forward.z);
 		}
-
-        public override void SetEmitterDirectivityPattern(int id, SourceDirectivityPattern pattern)
+		public override void RemoveEmitter(int id)
+		{
+			
+		}
+		public override void SetEmitterDirectivityPattern(int id, SourceDirectivityPattern pattern)
         {
 			PlaneverbDSPSetEmitterDirectivityPattern(id, (int)pattern);
 		}
@@ -118,7 +121,6 @@ namespace GPUVerb
 			Marshal.Copy(result, buf, 0, k_maxFrameLen);
 			return buf;
 		}
-
     }
 
 }

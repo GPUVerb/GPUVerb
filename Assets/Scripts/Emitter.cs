@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-// TODO: finish this by incorporating the functionality of PlaneverbAudioSource
 namespace GPUVerb
 {
 	public class Emitter : MonoBehaviour
@@ -28,7 +27,7 @@ namespace GPUVerb
 		SourceDirectivityPattern m_pattern = SourceDirectivityPattern.Cardioid;
 
 		DSPBase m_dsp = null;
-		int m_id = -1;
+		int m_id = DSPBase.k_invalidID;
 
 		#region ClipData
 		// read index into the clip data
@@ -59,6 +58,7 @@ namespace GPUVerb
 		{
 			if (m_playOnAwake)
 			{
+				OnStartEmission();
 				UpdateEmitter();
 			}
 
@@ -69,18 +69,23 @@ namespace GPUVerb
 		// Update is called once per frame
 		void Update()
 		{
-			if(m_id >= 0)
+			if(m_id != DSPBase.k_invalidID && m_isPlaying)
             {
-				Vector2Int pos = GPUVerbContext.Instance.ToGridPos(new Vector2(transform.position.x, transform.position.z));
-				AnalyzerResult? data = GPUVerbContext.Instance.GetOutput(pos);
-				if(data != null)
-                {
-					m_acousticData = data.Value;
-                }
+					Vector2Int pos = GPUVerbContext.Instance.ToGridPos(new Vector2(transform.position.x, transform.position.z));
+					AnalyzerResult? data = GPUVerbContext.Instance.GetOutput(pos);
+					if (data != null)
+					{
+						m_acousticData = data.Value;
+					}
 			}
 		}
 
-		public float[] GetSource(int numSamples)
+        void OnDestroy()
+        {
+			OnEndEmission();
+		}
+
+        public float[] GetSource(int numSamples)
         {
 			if(!m_isPlaying)
             {
@@ -107,7 +112,7 @@ namespace GPUVerb
 			{
 				if (!m_loop)
 				{
-					m_isPlaying = false;
+					OnEndEmission();
 				}
 				else
 				{
@@ -149,19 +154,27 @@ namespace GPUVerb
 			}
 		}
 
+		private void OnStartEmission()
+        {
+			m_id = m_dsp.RegisterEmitter(transform.position, transform.forward);
+			SetClip(m_clip);
+			Reverb.Instance.AddEmitter(this);
+		}
+
+		private void OnEndEmission()
+		{
+			m_dsp.RemoveEmitter(m_id);
+			m_id = DSPBase.k_invalidID;
+			SetClip(null);
+			Reverb.Instance.RemoveEmitter(this);
+		}
+
 		private void UpdateEmitter()
         {
-			if(m_id == -1)
-            {
-				m_id = m_dsp.RegisterEmitter(transform.position, transform.forward);
-            }
-			else
-            {
-				m_dsp.UpdateEmitter(m_id, transform.position, transform.forward);
-			}
-			
+			Debug.Assert(m_id != DSPBase.k_invalidID);
+
+			m_dsp.UpdateEmitter(m_id, transform.position, transform.forward);
 			m_dsp.SetEmitterDirectivityPattern(m_id, m_pattern);
-			SetClip(m_clip);
 		}
 	}
 }

@@ -26,12 +26,14 @@ namespace GPUVerb
 
     public abstract class DSPBase : IDisposable
     {
+        public static int k_invalidID = -1;
         public static int k_maxFrameLen = 4096;
 
         public DSPBase(DSPConfig config) { }
         public abstract void SetListenerPos(Vector3 pos, Vector3 forward);
         public abstract int RegisterEmitter(Vector3 pos, Vector3 forward);
         public abstract void UpdateEmitter(int id, Vector3 pos, Vector3 forward);
+        public abstract void RemoveEmitter(int id);
         public abstract void SetEmitterDirectivityPattern(int id, SourceDirectivityPattern pattern);
         public abstract void SendSource(int id, in AnalyzerResult param, float[] data, int numSamples, int channels);
         public abstract float[] GetOutput(ReverbIndex reverb);
