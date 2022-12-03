@@ -11,23 +11,12 @@ namespace GPUVerb
 	};
 
 	[RequireComponent(typeof(AudioSource))]
-	public class Reverb : SingletonBehavior<Reverb>
+	public class Reverb : MonoBehaviour
 	{
 		// a value on the range [0, 3), represents the index into the output fetcher array
 		[SerializeField]
 		ReverbIndex m_index = ReverbIndex.COUNT;
 		private static int m_runtimeIndex = 0;
-		private HashSet<Emitter> m_emitters = new HashSet<Emitter>();
-
-		public void AddEmitter(Emitter emitter)
-        {
-			m_emitters.Add(emitter);
-        }
-		public void RemoveEmitter(Emitter emitter)
-        {
-			m_emitters.Remove(emitter);
-		}
-
 
 		private void Awake()
 		{
@@ -40,13 +29,14 @@ namespace GPUVerb
 		private void OnAudioFilterRead(float[] data, int channels)
 		{
 			int dataBufferLength = data.Length;
+			HashSet<Emitter> emitters = AudioManager.Instance.Emitters;
 
 			// case: first reverb component to run during this audio frame, and there are emitters playing
-			if (m_runtimeIndex == 0 && m_emitters.Count > 0)
+			if (m_runtimeIndex == 0 && emitters.Count > 0)
 			{
 				// get source buffer from each PVDSP Audio Source
 				float[] buffer;
-				foreach (Emitter emitter in m_emitters)
+				foreach (Emitter emitter in emitters)
 				{
 					buffer = emitter.GetSource(dataBufferLength);
 					GPUVerbContext.Instance.DSP.SendSource(

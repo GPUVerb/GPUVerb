@@ -56,14 +56,14 @@ namespace GPUVerb
         // Start is called before the first frame update
         void Start()
 		{
+			m_dsp = GPUVerbContext.Instance.DSP;
+			m_volumeGain = Mathf.Pow(10f, m_volume / 20f);
+
 			if (m_playOnAwake)
 			{
 				OnStartEmission();
 				UpdateEmitter();
 			}
-
-			m_dsp = GPUVerbContext.Instance.DSP;
-			m_volumeGain = Mathf.Pow(10f, m_volume / 20f);
 		}
 
 		// Update is called once per frame
@@ -158,7 +158,7 @@ namespace GPUVerb
         {
 			m_id = m_dsp.RegisterEmitter(transform.position, transform.forward);
 			SetClip(m_clip);
-			Reverb.Instance.AddEmitter(this);
+			AudioManager.Instance.AddEmitter(this);
 		}
 
 		private void OnEndEmission()
@@ -166,7 +166,7 @@ namespace GPUVerb
 			m_dsp.RemoveEmitter(m_id);
 			m_id = DSPBase.k_invalidID;
 			SetClip(null);
-			Reverb.Instance.RemoveEmitter(this);
+			AudioManager.Instance.RemoveEmitter(this);
 		}
 
 		private void UpdateEmitter()

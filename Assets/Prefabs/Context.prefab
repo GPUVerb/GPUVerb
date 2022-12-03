@@ -47,9 +47,9 @@ MonoBehaviour:
   m_minCorner: {x: 0, y: 0}
   m_maxCorner: {x: 20, y: 20}
   m_dspConfig:
-    maxCallbackLength: 0
-    dspSmoothingFactor: 0
-    samplingRate: 0
-    useSpatialization: 0
-    wetGainRatio: 0
-  m_useRefClass: 0
+    maxCallbackLength: 4096
+    dspSmoothingFactor: 2
+    samplingRate: 44100
+    useSpatialization: 1
+    wetGainRatio: 0.1
+  m_useRefClass: 1
