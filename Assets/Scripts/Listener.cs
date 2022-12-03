@@ -20,7 +20,7 @@ namespace GPUVerb
             TransformState curState = new TransformState(transform);
             if (!curState.Equals(m_lastTransformState))
             {
-                GPUVerbContext.Instance.DSP.SetListenerPos(transform.position, transform.forward);
+                GPUVerbContext.Instance.UpdateListener(transform);
 
                 m_lastTransformState = curState;
             }

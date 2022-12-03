@@ -49,6 +49,7 @@ namespace GPUVerb
         AnalyzerResult[,] m_AnalyzerGrid;
         Vector2Int gridSizeInCells;
 
+        public override AnalyzerResult[,] GetGrid() => m_AnalyzerGrid;
 
         public AnalyzerRef(Vector2 gridSize, Vector2Int in_gridSizeInCells, PlaneverbResolution res, int gridId) : base()
         {
@@ -90,8 +91,8 @@ namespace GPUVerb
         {
             if (gridPos.x >= gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= gridSizeInCells.y || gridPos.y < 0)
             {
-                return new AnalyzerResult();
                 Debug.Log("Access outside of Analyzer Grid");
+                return new AnalyzerResult();
             }
             return m_AnalyzerGrid[gridPos.x, gridPos.y];
         }
