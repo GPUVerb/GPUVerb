@@ -150,6 +150,11 @@ namespace GPUVerb
 
         void AddGeometryHelper(in PlaneVerbAABB bounds)
         {
+            if (bounds.Equals(PlaneVerbAABB.s_empty))
+            {
+                return;
+            }
+
             Vector2Int boundsMin = ToGridPos(bounds.min);
             Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
@@ -165,6 +170,11 @@ namespace GPUVerb
         }
         void RemoveGeometryHelper(in PlaneVerbAABB bounds)
         {
+            if (bounds.Equals(PlaneVerbAABB.s_empty))
+            {
+                return;
+            }
+
             Vector2Int boundsMin = ToGridPos(bounds.min);
             Vector2Int boundsMax = ToGridPos(bounds.max);
             Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);

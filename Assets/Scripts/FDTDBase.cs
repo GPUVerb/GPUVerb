@@ -113,7 +113,7 @@ namespace GPUVerb
         protected int m_responseLength;
 
         #region Geometry Data
-        protected const int k_invalidGeomID = -1;
+        public const int k_invalidGeomID = -1;
         private List<GeomInfo> m_geometries;
         private List<GeomtryUpdateInfo> m_pendingUpdates;
         #endregion

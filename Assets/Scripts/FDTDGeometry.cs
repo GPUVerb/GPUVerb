@@ -17,33 +17,74 @@ namespace GPUVerb
         AbsorptionCoefficient m_lastAbsorption = AbsorptionCoefficient.Default;
 
         TransformState m_lastTransformState = new TransformState();
+        bool m_lastWinthinHead = false;
 
-        int m_geomID = -1;
+
+        int m_geomID = FDTDBase.k_invalidGeomID;
         Collider m_collider = null;
+
+        // get rasterized bounds based on player head plane
+        bool IsWithinPlayerHeadSlice()
+        {
+            Bounds b = m_collider.bounds;
+            float headY = Listener.Position.y;
+            float thisY = b.center.y;
+            float halfHeight = b.extents.y; // extents are half sizes
+            return (thisY - halfHeight) <= headY && (thisY + halfHeight) >= headY;
+        }
 
         // Start is called before the first frame update
         void Start()
         {
             m_collider = GetComponent<Collider>();
-            m_geomID = GPUVerbContext.Instance.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
 
             m_lastTransformState = new TransformState(transform);
             m_lastAbsorption = m_absorption;
+
+            if(IsWithinPlayerHeadSlice())
+            {
+                m_geomID = GPUVerbContext.Instance.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                m_lastWinthinHead = true;
+            }
+            else
+            {
+                m_lastWinthinHead = false;
+            }
         }
 
         private void Update()
         {
-            TransformState curState = new TransformState(transform);
-            if (!curState.Equals(m_lastTransformState))
+            bool withinHead = IsWithinPlayerHeadSlice();
+            if(m_lastWinthinHead && !withinHead)
             {
-                GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
-                m_lastTransformState = curState;
+                GPUVerbContext.Instance.UpdateGeometry(m_geomID, PlaneVerbAABB.s_empty);
             }
-
-            if (m_absorption != m_lastAbsorption)
+            else if(!m_lastWinthinHead && withinHead)
             {
-                GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
-                m_lastAbsorption = m_absorption;
+                if(m_geomID == FDTDBase.k_invalidGeomID)
+                {
+                    m_geomID = GPUVerbContext.Instance.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                }
+                else
+                {
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                }
+            }
+            m_lastWinthinHead = withinHead;
+
+            if(withinHead)
+            {
+                TransformState curState = new TransformState(transform);
+                if (!curState.Equals(m_lastTransformState))
+                {
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    m_lastTransformState = curState;
+                }
+                if (m_absorption != m_lastAbsorption)
+                {
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    m_lastAbsorption = m_absorption;
+                }
             }
         }
         private void OnDestroy()
@@ -59,8 +100,17 @@ namespace GPUVerb
                 m_collider = GetComponent<Collider>();
             }
 
+
+            Color save = Gizmos.color;
+            if(EditorApplication.isPlaying && IsWithinPlayerHeadSlice())
+            {
+                Gizmos.color = Color.green;
+            }
+
             Gizmos.DrawWireCube(m_collider.bounds.center, m_collider.bounds.size);
             Handles.Label(m_collider.bounds.center, Enum.GetName(typeof(AbsorptionCoefficient), m_absorption));
+
+            Gizmos.color = save;
         }
 #endif
     }

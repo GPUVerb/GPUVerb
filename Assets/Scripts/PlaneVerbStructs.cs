@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Runtime.InteropServices;
+using System;
 
 namespace GPUVerb
 {
@@ -46,8 +47,10 @@ namespace GPUVerb
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct PlaneVerbAABB
+    public struct PlaneVerbAABB : IEquatable<PlaneVerbAABB>
     {
+        // an empty aabb
+        public static PlaneVerbAABB s_empty = new PlaneVerbAABB(new PlaneVerbVec2(0, 0), 0, 0, 0);
         public PlaneVerbVec2 position;
         public float width;
         public float height;
@@ -60,7 +63,6 @@ namespace GPUVerb
         {
             get => new Vector2(position.x + width / 2, position.y + height / 2);
         }
-
         public PlaneVerbAABB(PlaneVerbVec2 position, float width, float height, float absorption)
         {
             this.position = position;
@@ -74,6 +76,15 @@ namespace GPUVerb
             this.width = bounds.size.x;
             this.height = bounds.size.z;
             this.absorption = absorption;
+        }
+
+        public bool Equals(PlaneVerbAABB other)
+        {
+            return Mathf.Approximately(other.position.x, position.x) &&
+                Mathf.Approximately(other.position.y, position.y) &&
+                Mathf.Approximately(other.width, width) &&
+                Mathf.Approximately(other.height, height) &&
+                Mathf.Approximately(other.absorption, absorption);
         }
     }
 }
