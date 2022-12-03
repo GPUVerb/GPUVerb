@@ -8,22 +8,49 @@ namespace GPUVerb
 {
     public class BackgroundWorker
     {
+        private Mutex m_mutex;
         private GPUVerbContext m_context;
 
+        // this triggers a recalculation
+        // write-only by the game thread, rw by Background Worker
+        private bool m_dirty;
+        public bool Dirty {
+            private get => m_dirty;
+            set
+            {
+                m_mutex.WaitOne();
+                {
+                    m_dirty = value;
+                }
+                m_mutex.ReleaseMutex();
+            }
+        }
+
+        private Vector3 m_listenerPos;
         // write-only by the game thread, read only by Background Worker
-        public Vector3 ListenerPos { private get; set; }
-        // current processed position
-        public Vector3 m_Pos;
+        public Vector3 ListenerPos {
+            private get => m_listenerPos;
+            set
+            {
+                m_mutex.WaitOne();
+                {
+                    m_listenerPos = value;
+                    m_dirty = true;
+                }
+                m_mutex.ReleaseMutex();
+            }
+        }
 
         private bool m_terminate;
         private AnalyzerResult[,] m_result;
 
         public BackgroundWorker(GPUVerbContext context)
         {
+            m_mutex = new Mutex();
             m_result = null;
             m_context = context;
             m_terminate = false;
-            m_Pos = ListenerPos = Vector3.zero;
+            m_listenerPos = Vector3.zero;
         }
         public void Terminate()
         {
@@ -44,12 +71,12 @@ namespace GPUVerb
                     Debug.LogError("Analyzer not set");
                     continue;
                 }
-                if (ListenerPos != m_Pos)
+                if (Dirty)
                 {
-                    m_Pos = ListenerPos;
+                    Dirty = false;
 
-                    m_context.FDTDSolver.GenerateResponse(m_Pos);
-                    m_context.AnalyzerSolver.AnalyzeResponses(m_Pos);
+                    m_context.FDTDSolver.GenerateResponse(ListenerPos);
+                    m_context.AnalyzerSolver.AnalyzeResponses(ListenerPos);
 
                     // cache result (to prevent game thread from reading a grid that is being written to)
                     AnalyzerResult[,] grid = m_context.AnalyzerSolver.GetGrid();
@@ -138,10 +165,28 @@ namespace GPUVerb
             return m_FDTDSolver.ToGridPos(worldPos);
         }
 
+        public int AddGeometry(in PlaneVerbAABB bounds)
+        {
+            int id = m_FDTDSolver.AddGeometry(bounds);
+            m_backgroundWorker.Dirty = true;
+            return id;
+        }
+
         public void UpdateListener(Transform listenerTransform)
         {
             m_backgroundWorker.ListenerPos = listenerTransform.position;
             m_DSP.SetListenerPos(listenerTransform.position, listenerTransform.forward);
+        }
+
+        public void UpdateGeometry(int id, in PlaneVerbAABB bounds)
+        {
+            m_FDTDSolver.UpdateGeometry(id, bounds);
+            m_backgroundWorker.Dirty = true;
+        }
+        public void RemoveGeometry(int id)
+        {
+            m_FDTDSolver.RemoveGeometry(id);
+            m_backgroundWorker.Dirty = true;
         }
 
         public AnalyzerResult? GetOutput(Vector2Int pos)
@@ -169,10 +214,13 @@ namespace GPUVerb
 
         private void OnDrawGizmos()
         {
+            Color save = Gizmos.color;
+            Gizmos.color = Color.red;
             Gizmos.DrawLine(new Vector3(m_minCorner.x, 0, m_minCorner.y), new Vector3(m_minCorner.x, 0, m_maxCorner.y));
             Gizmos.DrawLine(new Vector3(m_minCorner.x, 0, m_maxCorner.y), new Vector3(m_maxCorner.x, 0, m_maxCorner.y));
             Gizmos.DrawLine(new Vector3(m_maxCorner.x, 0, m_maxCorner.y), new Vector3(m_maxCorner.x, 0, m_minCorner.y));
             Gizmos.DrawLine(new Vector3(m_maxCorner.x, 0, m_minCorner.y), new Vector3(m_minCorner.x, 0, m_minCorner.y));
+            Gizmos.color = save;
         }
     }
 }
