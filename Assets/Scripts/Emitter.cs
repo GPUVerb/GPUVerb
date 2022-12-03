@@ -71,12 +71,14 @@ namespace GPUVerb
 		{
 			if(m_id != DSPBase.k_invalidID && m_isPlaying)
             {
-					Vector2Int pos = GPUVerbContext.Instance.ToGridPos(new Vector2(transform.position.x, transform.position.z));
-					AnalyzerResult? data = GPUVerbContext.Instance.GetOutput(pos);
-					if (data != null)
-					{
-						m_acousticData = data.Value;
-					}
+				UpdateEmitter();
+
+				Vector2Int pos = GPUVerbContext.Instance.ToGridPos(new Vector2(transform.position.x, transform.position.z));
+				AnalyzerResult? data = GPUVerbContext.Instance.GetOutput(pos);
+				if (data != null)
+				{
+					m_acousticData = data.Value;
+				}
 			}
 		}
 
