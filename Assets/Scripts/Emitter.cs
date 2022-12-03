@@ -96,7 +96,7 @@ namespace GPUVerb
 			int realSamplesEnd = Mathf.Min(m_readIndex + numSamples, m_samples);
 
 			// find the real number of samples to use (in case this is the end of the clip)
-			int realSamplesToUse = realSamplesEnd - m_samples;
+			int realSamplesToUse = realSamplesEnd - m_readIndex;
 
 			// apply volume
 			for (int i = 0, j = m_readIndex; i < realSamplesToUse; ++i, ++j)

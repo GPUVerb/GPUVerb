@@ -182,6 +182,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Emitter
       objectReference: {fileID: 0}
+    - target: {fileID: 5978401970390147407, guid: ef9c5e2ffc6109e448a80e8cee90a694, type: 3}
+      propertyPath: m_clip
+      value: 
+      objectReference: {fileID: 8300000, guid: b31f595d64a930f42916bccd35915456, type: 3}
+    - target: {fileID: 5978401970390147407, guid: ef9c5e2ffc6109e448a80e8cee90a694, type: 3}
+      propertyPath: m_volume
+      value: 12
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ef9c5e2ffc6109e448a80e8cee90a694, type: 3}
 --- !u!1001 &163097988

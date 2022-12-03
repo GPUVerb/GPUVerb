@@ -36,7 +36,7 @@ namespace GPUVerb
         public abstract void RemoveEmitter(int id);
         public abstract void SetEmitterDirectivityPattern(int id, SourceDirectivityPattern pattern);
         public abstract void SendSource(int id, in AnalyzerResult param, float[] data, int numSamples, int channels);
-        public abstract float[] GetOutput(ReverbIndex reverb);
+        public abstract bool GetOutput(ReverbIndex reverb, float[] data);
         public abstract void Dispose();
     }
 }

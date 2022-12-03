@@ -16,7 +16,10 @@ namespace GPUVerb
 		// a value on the range [0, 3), represents the index into the output fetcher array
 		[SerializeField]
 		ReverbIndex m_index = ReverbIndex.COUNT;
-		private static int m_runtimeIndex = 0;
+		private float[] m_dspOutput = new float[DSPBase.k_maxFrameLen];
+		private static int s_runtimeIndex = 0;
+		private static bool s_processFlag = false;
+
 
 		private void Awake()
 		{
@@ -32,7 +35,7 @@ namespace GPUVerb
 			HashSet<Emitter> emitters = AudioManager.Instance.Emitters;
 
 			// case: first reverb component to run during this audio frame, and there are emitters playing
-			if (m_runtimeIndex == 0 && emitters.Count > 0)
+			if (s_runtimeIndex == 0 && emitters.Count > 0)
 			{
 				// get source buffer from each PVDSP Audio Source
 				float[] buffer;
@@ -45,30 +48,27 @@ namespace GPUVerb
 						buffer, dataBufferLength,
 						channels);
 				}
+
+				s_processFlag = GPUVerbContext.Instance.DSP.GetOutput(m_index, m_dspOutput);
 			}
 
 			// increment the runtime index looping back around to zero from 3
-			m_runtimeIndex = (m_runtimeIndex + 1) % (int)ReverbIndex.COUNT;
-
-			float[] dspOutput = GPUVerbContext.Instance.DSP.GetOutput(m_index);
+			s_runtimeIndex = (s_runtimeIndex + 1) % (int)ReverbIndex.COUNT;
 
 			// fill the in/out data buffer IFF output was processed successfully
-			if (dspOutput != null)
+			if (s_processFlag)
 			{
 				// choose the right length in case data buffer too big
-				dataBufferLength = (dataBufferLength > dspOutput.Length) ? dspOutput.Length : dataBufferLength;
+				dataBufferLength = dataBufferLength > m_dspOutput.Length ? m_dspOutput.Length : dataBufferLength;
 
 				// memcpy the data over
-				Array.Copy(dspOutput, data, dataBufferLength);
+				Array.Copy(m_dspOutput, data, dataBufferLength);
 			}
 			// case that the PVDSP module couldn't generate valid output
 			else
 			{
 				// fill output with 0
-				for (int i = 0; i < dataBufferLength; ++i)
-				{
-					data[i] = 0f;
-				}
+				Array.Fill(m_dspOutput, 0f);
 			}
 		}
 	}

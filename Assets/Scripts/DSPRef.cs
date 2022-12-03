@@ -100,16 +100,16 @@ namespace GPUVerb
 			PlaneverbDSPSendSource(id, param, data, frames);
 		}
 
-        public override float[] GetOutput(ReverbIndex reverb)
+        public override bool GetOutput(ReverbIndex reverb, float[] data)
         {
             if(!PlaneverbDSPProcessOutput())
             {
-				return null;
+				return false;
             }
 
 			if (reverb == ReverbIndex.COUNT)
             {
-				return null;
+				return false;
 			}
 
 			// fetch the buffer
@@ -117,9 +117,8 @@ namespace GPUVerb
 			s_outputFetchers[(int)reverb](ref result);
 
 			// copy the buffer as a float array
-			float[] buf = new float[k_maxFrameLen];
-			Marshal.Copy(result, buf, 0, k_maxFrameLen);
-			return buf;
+			Marshal.Copy(result, data, 0, k_maxFrameLen);
+			return true;
 		}
     }
 
