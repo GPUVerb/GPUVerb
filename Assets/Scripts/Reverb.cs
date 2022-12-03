@@ -16,6 +16,8 @@ namespace GPUVerb
 		// a value on the range [0, 3), represents the index into the output fetcher array
 		[SerializeField]
 		ReverbIndex m_index = ReverbIndex.COUNT;
+
+		private DSPBase m_dsp;
 		private float[] m_dspOutput = new float[DSPBase.k_maxFrameLen];
 		private static int s_runtimeIndex = 0;
 		private static bool s_processFlag = false;
@@ -29,7 +31,12 @@ namespace GPUVerb
 				"PlaneverbReverb component attached to GameObject without an AudioSource!");
 		}
 
-		private void OnAudioFilterRead(float[] data, int channels)
+        private void Start()
+        {
+			m_dsp = GPUVerbContext.Instance.DSP;
+		}
+
+        private void OnAudioFilterRead(float[] data, int channels)
 		{
 			int dataBufferLength = data.Length;
 			HashSet<Emitter> emitters = AudioManager.Instance.Emitters;
@@ -42,14 +49,14 @@ namespace GPUVerb
 				foreach (Emitter emitter in emitters)
 				{
 					buffer = emitter.GetSource(dataBufferLength);
-					GPUVerbContext.Instance.DSP.SendSource(
+					m_dsp.SendSource(
 						emitter.ID,
 						emitter.AcousticData,
 						buffer, dataBufferLength,
 						channels);
 				}
 
-				s_processFlag = GPUVerbContext.Instance.DSP.GetOutput(m_index, m_dspOutput);
+				s_processFlag = m_dsp.GenerateOutput();
 			}
 
 			// increment the runtime index looping back around to zero from 3
@@ -58,6 +65,8 @@ namespace GPUVerb
 			// fill the in/out data buffer IFF output was processed successfully
 			if (s_processFlag)
 			{
+				m_dsp.GetOutput(m_index, m_dspOutput);
+
 				// choose the right length in case data buffer too big
 				dataBufferLength = dataBufferLength > m_dspOutput.Length ? m_dspOutput.Length : dataBufferLength;
 
