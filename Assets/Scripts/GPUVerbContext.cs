@@ -153,6 +153,8 @@ namespace GPUVerb
                 m_FDTDSolver = new FDTD(
                     new Vector2Int(Mathf.CeilToInt(m_maxCorner.x), Mathf.CeilToInt(m_maxCorner.y)),
                     PlaneverbResolution.LowResolution);
+                m_AnalyzerSolver = new AnalyzerGPU();
+                m_DSP = new DSPRef(m_dspConfig);
             }
 
             m_backgroundWorker = new BackgroundWorker(this);

@@ -32,7 +32,7 @@ namespace GPUVerb
         const string k_distanceGainThresholdShaderParam = "DISTANCE_GAIN_THRESHOLD";
 
         const string k_shaderPath = "Shaders/Analyzer";
-        const string k_EcodeResponseKernelName = "KernEcodeResponse";
+        const string k_EncodeResponseKernelName = "KernEncodeResponse";
         const string k_EncodeListenerDirectionKernelName = "KernEncodeListenerDirection";
 
 
@@ -104,7 +104,7 @@ namespace GPUVerb
             AnalyerInitSetup();
 
             m_shader = Resources.Load<ComputeShader>(k_shaderPath);
-            m_encodeResponseKernel = m_shader.FindKernel(k_EcodeResponseKernelName);
+            m_encodeResponseKernel = m_shader.FindKernel(k_EncodeResponseKernelName);
             m_encodeListenerDirectionKernel = m_shader.FindKernel(k_EncodeListenerDirectionKernelName);
 
             m_shader.GetKernelThreadGroupSizes(m_encodeResponseKernel, out uint x, out uint y, out uint _);
