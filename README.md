@@ -30,15 +30,17 @@ The FDTD solver allows us to accurately simulate the wave-based nature of sound.
 
 ![](./ReadmeImgs/rasterization.png)
 
-Then 2D sound wave propagation is simulated within this plane, as an approximation of the simulation in 3D. We optimze the FDTD solver further by moving some computation from CPU to GPU (using compute shader). (more about this in the [Performance Optimization Section](#performance-analysis))
+Then 2D sound wave propagation is simulated within this plane, as an approximation of the simulation in 3D. We optimize the FDTD solver further by moving some computation from CPU to GPU (using compute shader). (more about this in the [Performance Optimization Section](#performance-analysis))
 
 Below is a simple visualization of the pressure output of the solver.
 
 ![](./ReadmeImgs/fdtd_demo.gif)
 
 ## Analyzer
-The analyzer is wholly based on the implementation described in the paper. (Compute shader usage?)
+The analyzer is wholly based on the implementation described in the paper. Each analyzer grid cell takes in the chain of samples at corresponding cell from FDTD grid output, and then we process and calculate physics data into acoustic parameters which can be used at next stage (digital Signal Processor). We optimize the Analyzer sovler further by moving all calculation at each data cell from CPU to GPU (using compute shdaer).  (more about this in the [Performance Optimization Section](#performance-analysis))
 
+
+## Digital Signal Processor (DSP)
 The digital signal processor is built entirely within the framework of Unity's Spatializer SDK, which is in turn built on Unity's Native Audio SDK. Essentially, a C++ is build into a .dll to be incorporated into the Unity framework as a per-source spatializing plugin. 
 
 
@@ -58,3 +60,10 @@ To test whether the GPU FDTD solver outperforms the original planeverb implement
 The result shows that the GPU implementation scales much better with grid dimension. 
 
 This makes it possible to simulate wave propagation in relatively large scenes, because the FDTD solver is run every time the listener or a sound source moves, a running time greater than 400ms may cause noticeable delay in the audio output.
+
+## Analyzer Solver using Compute Shader
+Our GPU implementation of the Analyzer solver parallelizes the computations of acoustic parameters at each cell.
+
+The runtime of GPU Analyzer is about half the runtime of CPU Implementation. The reason it is not improved by as much as FDTD solver did is because Analyzer only need to process its 2d grid 2 times instead of thousands in FDTD solver, one for encodeResponse, which includes Occlusion, WetGain, RT60,Low Pass Intensity and sound directivity, and the other one for EncodeListenerDirection, which is only for direction attribute.  
+
+![](./ReadmeImgs/Analyzer_time.png)

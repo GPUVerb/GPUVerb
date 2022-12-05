@@ -64,7 +64,6 @@ namespace GPUVerb
         }
         public override void AnalyzeResponses(Vector3 listener)
         {
-            Profiler.BeginSample("AnalyzerRef.GenerateResponse");
             unsafe
             {
                 fixed (AnalyzerResult* ptr = m_AnalyzerGrid)
@@ -79,7 +78,6 @@ namespace GPUVerb
 
             //Debug.Log(m_AnalyzerGrid[0,0].ToString());
 
-            Profiler.EndSample();
         }
 
         public override AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos)
