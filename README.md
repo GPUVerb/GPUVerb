@@ -46,7 +46,7 @@ Our GPU implementation of the FDTD solver parallelizes the computations of updat
 
 Specifically, each cell in the grid updates its data in parallel based on its own data and the data of the neighboring cells from the previous iteration.
 
-The process is almost embarassingly parallel. Dependency within the grid is minimal, as each cell would need to fetch data from 2 of its closest neighbors.
+The process is almost embarassingly parallel. Dependency within the grid is minimal, as each cell would need to fetch data from 4 of its closest neighbors.
 
 To test whether the GPU FDTD solver outperforms the original planeverb implementation, we measure the time it takes to simulate the propagation of a single gaussian pulse as grid size increases, for both implementations. Naturally, the lower the runtime, the more efficient the implementation.
 - The hardware used for this test is i7-8700 @ 3.20 GHz 16GB and RTX 2070
