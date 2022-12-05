@@ -111,14 +111,24 @@ namespace GPUVerb
         protected uint m_samplingRate;
         protected float m_numSecsPerResponse;
         protected int m_responseLength;
+        protected PlaneverbResolution m_resolution;
+
 
         #region Geometry Data
         public const int k_invalidGeomID = -1;
         private List<GeomInfo> m_geometries;
         private List<GeomtryUpdateInfo> m_pendingUpdates;
         #endregion
-        
+
         protected Cell[,,] m_grid;
+
+        public virtual int GetResponseLength() => m_responseLength;
+        public Vector2 GetGridSize() => m_gridSize;
+        public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
+        public float GetCellSize() => m_cellSize;
+        public PlaneverbResolution GetResolution() => m_resolution;
+        public uint GetSamplingRate() => m_samplingRate;
+        public Cell[,,] GetGrid() => m_grid;
 
         // TODO: remove ID
         protected int m_id;
@@ -127,6 +137,7 @@ namespace GPUVerb
         public FDTDBase(Vector2 gridSize, PlaneverbResolution res) 
         {
             m_gridSize = gridSize;
+            m_resolution = res;
 
             float minWavelength = k_soundSpeed / (float)res;
             m_cellSize = minWavelength / k_pointsPerWaveLength;
@@ -146,7 +157,8 @@ namespace GPUVerb
             m_pendingUpdates = new List<GeomtryUpdateInfo>();
         }
         private FDTDBase() { }
-        public virtual int GetResponseLength() => m_responseLength;
+
+
         public abstract void GenerateResponse(Vector3 listener);
         public IEnumerable<Cell> GetResponse(Vector2Int gridPos)
         {
@@ -256,9 +268,6 @@ namespace GPUVerb
                 Mathf.Clamp(Mathf.FloorToInt(pos.y / m_cellSize), 0, m_gridSizeInCells.y - 1)
             );
         }
-
-        public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
-        public float GetCellSize() => m_cellSize;
         public abstract void Dispose();
 
         #region DEBUG

@@ -1,0 +1,390 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel KernEncodeResponse
+#pragma kernel KernEncodeListenerDirection
+
+struct Cell {
+	float pressure;
+	float velX;
+	float velY;
+	int   b;
+};
+struct AnalyzerResult {
+	float occlusion;
+	float wetGain;
+	float rt60;
+	float lowpassIntensity;
+	float2 direction;
+	float2 sourceDirectivity;
+};
+
+// used by Analyzer
+StructuredBuffer<Cell>					FDTDgrid;
+RWStructuredBuffer<AnalyzerResult>      analyzerGrid;
+RWStructuredBuffer<int>					delaySamples;
+
+
+
+
+float2                         listenerPos; // in meter, need to converted into grid before use in gridPos
+int2                           gridDim; // (x dim, y dim)
+float                          cellSize;
+float                          samplingRate;
+float                          responseLength;
+float                          EFree;
+int							   resolution;
+
+// constants
+float                          AUDIBLE_THRESHOLD_GAIN;
+float                          DRY_GAIN_ANALYSIS_LENGTH;
+float                          DRY_DIRECTION_ANALYSIS_LENGTH;
+float                          WET_GAIN_ANALYSIS_LENGTH;
+float                          SCHROEDER_OFFSET_S;
+float                          C;
+int                            DELAY_CLOSE_THRESHOLD;
+float                          DISTANCE_GAIN_THRESHOLD;
+
+const int2 POSSIBLE_NEIGHBORS[] =
+{
+	int2(-1, -1),	int2(-1, 0),	int2(-1, 1),
+	int2(0, -1),					int2(0, 1),
+	int2(1, -1),	int2(1, 0),		int2(1, 1)
+};
+const int COUNT_NEIGHBOR = 8;
+
+
+#define IDX(i,j,dim) ((i) * dim[1] + (j))
+#define INDEX_TO_POS(ISET, JSET, i, dim) (ISET) = i / int(dim[1]); (JSET) = i - (i / int(dim[1])) * int(dim[1])
+#define VALID(i,j,dim) ((i) < dim[0] && (j) < dim[1])
+#define FLT_MAX 3.402823466e+38
+#define INT_MAX 2147483647
+
+float GetEFreePerR(int listenerX, int listenerY, int emitterX, int emitterY)
+{
+	float lX = listenerX * cellSize;
+	float lY = listenerX * cellSize;
+	float eX = emitterX * cellSize;
+	float eY = emitterY * cellSize;
+
+	float r = sqrt((eX - lX) * (eX - lX) + (eY - lY) * (eY - lY));
+	if (r == 0.0f)
+	{
+		return EFree;
+	}
+
+	return EFree / r;
+}
+
+
+// required binding: gridDim, gridOut
+[numthreads(8, 8, 1)]
+void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
+	// column major, since we store data in c# array as [x,y,z]
+	const int i = id.x;
+	const int j = id.y;
+
+	if (!VALID(i, j, gridDim)) {
+		return;
+	}
+	const int serialIndex = IDX(i, j, gridDim);
+	const int numSamples = responseLength;
+	const int cellChainStartIndex = i * gridDim[1] * numSamples + j * numSamples;
+
+	// 
+	// ONSET DELAY
+	// 
+	int onsetSample = 0;
+	for (; onsetSample < numSamples; ++onsetSample)
+	{
+		float next = FDTDgrid[cellChainStartIndex + onsetSample].pressure;
+		if (abs(next) > AUDIBLE_THRESHOLD_GAIN)
+		{
+			break;
+		}
+	}
+
+	if (onsetSample < numSamples)
+	{
+		delaySamples[serialIndex] = onsetSample;
+	}
+	//no onset found, fill infinity and bail, can't encode anything else.
+	else
+	{
+		delaySamples[serialIndex] = INT_MAX;
+	}
+
+	// 
+	// DRY PROCESSING: OBSTRUCTION and SOURCE DIRECTION
+	//
+
+	int directGainSamples = int(DRY_GAIN_ANALYSIS_LENGTH * samplingRate);
+	int sourceDirSamples = int(DRY_DIRECTION_ANALYSIS_LENGTH * samplingRate);
+	int sourceDirEnd = onsetSample + sourceDirSamples;
+	int directEnd = onsetSample + directGainSamples;
+
+	// "Code below assumes source directivity is estimated on a shorter interval of time than dry gain."
+	if (sourceDirSamples > directGainSamples)
+	{
+		return;
+	}
+
+	float obstructionGain = 0.0;
+	float2 radiationDir = float2(0.0, 0.0);
+	{
+		float Edry = 0;
+		int k = 0;
+		for (; k < sourceDirEnd; ++k)
+		{
+			float pr = FDTDgrid[cellChainStartIndex + k].pressure;
+			pr = pr * pr;
+			Edry += pr;
+			radiationDir.x += pr;
+			radiationDir.y += pr;
+		}
+		for (; k < directEnd; ++k)
+		{
+			float pr = FDTDgrid[cellChainStartIndex + k].pressure; 
+			Edry += pr * pr;
+		}
+
+		// Normalize dry energy by free-space energy to obtain geometry-based 
+		// obstruction gain with distance attenuation factored out
+		float EfreePr = 0.0;
+		{
+			const int listenerX = int(listenerPos.x / cellSize);
+			const int listenerY = int(listenerPos.y / cellSize);
+			const int emitterX = i;
+			const int emitterY = j;
+
+			EfreePr = GetEFreePerR(listenerX, listenerY, emitterX, emitterY);
+		}
+
+		float E = Edry / EfreePr;
+		obstructionGain = sqrt(E);
+
+		// Normalize and negate flux direction to obtain radiated unit vector
+		float norm = sqrt(radiationDir.x * radiationDir.x + radiationDir.y * radiationDir.y);
+		norm = -1.0 / (norm > 0.0 ? norm : 1.0);
+		radiationDir.x = norm * radiationDir.x;
+		radiationDir.y = norm * radiationDir.y;
+	}
+
+	analyzerGrid[serialIndex].occlusion = obstructionGain;
+	analyzerGrid[serialIndex].sourceDirectivity = radiationDir;
+
+	//
+	// LOW-PASS CUTOFF FREQUENCY
+	//
+
+	// get input distance driven by inverse of occlusion. If occlusion is very small, cap out at "lots of occlusion"
+	float r = 1.0 / max(0.001, obstructionGain);
+	// Find LPF cutoff frequency by feeding into equation: y = -147 + (18390) / (1 + (x / 12)^0.8 )
+	analyzerGrid[serialIndex].lowpassIntensity = - 147.0 + (18390.0) / (1.0 + pow(r / 12.0, 0.8));
+
+	//
+	// Wet gain
+	//
+	float wetEnergy = 0.0f;
+	{
+		int wetGainSamples = int(WET_GAIN_ANALYSIS_LENGTH * samplingRate);
+		const int end = min(directEnd + 1 + wetGainSamples, numSamples);
+		for (int k = directEnd + 1; k < end; k++)
+		{
+			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			wetEnergy += p * p;
+		}
+	}
+
+	// Normalize as if source had unit energy at 1m distance
+	analyzerGrid[serialIndex].wetGain = sqrt(wetEnergy / EFree);
+
+	//
+	// Decay Time
+	//
+	{
+		// FIND THE T60 OF A SIGNAL
+		// ==========================
+		//
+		// Use backwards Schroeder integration
+		//         ^ inf
+		// I(t) = | (P(t))^2 dt
+		//       v t
+		//
+		// For each point in the signal starting at the end, going backwards until the end of the impulse
+		// the intensity at the point is sum of the signal squared.
+		// Effectively: 
+		//	s[i], i = 0...N-1 is the signal
+		//	EnergyDecayCurve[i] = sum(s[i...N-1]^2)
+		//	EnergyDecayCurveDB[i] = 10*log10(EnergyDecayCurve[i])
+		// Taking the slope of the generated curve will give the T60
+		// slope of I(t), given f = max seconds, the slope is the simple linear regression, as above:
+		//
+		// B = sum((x_i - xbar) * (y_i - ybar), 1, n)
+		//	   ----------------------------------------
+		//		     sum( (x_i - xbar)^2, 1, n )
+		// i = index
+		// x_i = t
+		// xbar = average of x_i
+		// y_i = EnergyDecayCurveDB[i]
+		// ybar = average of y_i
+		// 
+		// To find the T60: 
+		// T60 = -60dB / B
+
+		int startingPoint = directEnd + 1;
+		// linear regression ignores some fixed bit of tail of energy decay curve which dips towards 0
+		int endPoint = numSamples - int(SCHROEDER_OFFSET_S * samplingRate);
+		float regressN = float(endPoint - startingPoint);
+
+		// We regress assuming time-step is 1 and startingPoint is x=0.
+		// The latter offset does not change slope, and time-step adjustment is done at end.
+		float xmean = (regressN - 1.0) * 0.5;
+		float xsum = regressN * xmean;
+
+		// Sum[(x-xmean)^2] = Sum[(i - ((n - 1)/2))^2, {i, 0, n - 1}] = 1/12 n (-1 + n^2)
+		float denominator = (1.0 / 12.0) * regressN * (regressN * regressN - 1.0);
+
+		// Backward energy integral
+		float energyDecayCurve = 0;
+		float energyDecayCurveDB = 0;
+		float xysum = 0;
+		float ysum = 0;
+
+		// For tail bit just accumulate energy, no regression
+		for (int k = numSamples - 1; k >= endPoint; --k)
+		{
+			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			energyDecayCurve += p * p;
+		}
+
+		for (int k = endPoint - 1; k >= startingPoint; --k)
+		{
+			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			energyDecayCurve += p * p;
+			energyDecayCurveDB = 10.0 * log10(energyDecayCurve);
+
+			float y_i = energyDecayCurveDB;
+			float x_i = float(k - startingPoint);
+			xysum += y_i * x_i;
+			ysum += y_i;
+		}
+
+		float ymean = ysum / regressN;
+		float numerator = xysum - ymean * xsum - xmean * ysum + regressN * xmean * ymean;
+
+		float slopeDBperSample = numerator / denominator;
+		float slopeDBperSec = slopeDBperSample * samplingRate;
+		analyzerGrid[serialIndex].rt60 = -60.0 / slopeDBperSec;
+	}
+}
+
+
+[numthreads(8,8,1)]
+void KernEncodeListenerDirection(uint3 id : SV_DispatchThreadID)
+{
+	// column major, since we store data in c# array as [x,y,z]
+	const int i = id.x;
+	const int j = id.y;
+
+	if (!VALID(i, j, gridDim)) {
+		return;
+	}
+	const int serialIndex = IDX(i, j, gridDim);
+
+
+	float loudness = analyzerGrid[serialIndex].occlusion;
+	int2 dim = gridDim;
+	int nextIndex = serialIndex;
+	const int maxDelay = INT_MAX;
+	int delay = maxDelay;
+	int nextDelay = maxDelay;
+	float fSamplingRate = float(samplingRate);
+	float wavelength = C / float(resolution);
+	const float threshold = 0.3;
+	float thresholdDist = threshold * wavelength;
+
+	// loop while not close to the listener
+	while (delay > DELAY_CLOSE_THRESHOLD && loudness < DISTANCE_GAIN_THRESHOLD)
+	{
+		int r, c;
+		INDEX_TO_POS(r, c, nextIndex, dim);
+		float nextLoudness = 0.0;
+		nextDelay = maxDelay;
+
+		// for each neighbor find the neighbor with the smallest delay time
+		for (int k = 0; k < COUNT_NEIGHBOR; ++k)
+		{
+			int nr = r + POSSIBLE_NEIGHBORS[k].x;
+			int nc = c + POSSIBLE_NEIGHBORS[k].y;
+			if (nr < 0 || nc < 0 || nr >= dim.x || nc >= dim.y)
+			{
+				continue;
+			}
+
+			int newPosIndex = IDX(nr, nc, dim);
+			AnalyzerResult result = analyzerGrid[newPosIndex];
+			delay = delaySamples[newPosIndex];
+			if (delay == responseLength || result.occlusion == 0.0)
+			{
+				continue;
+			}
+			else if (delay < nextDelay && result.occlusion > 0.0)
+			{
+				nextLoudness = result.occlusion;
+				nextIndex = newPosIndex;
+				nextDelay = delay;
+			}
+		}
+
+		// case couldn't find a valid neighbor
+		if (nextDelay == INT_MAX || nextDelay >= delay)
+		{
+			break;
+		}
+
+		delay = nextDelay;
+		loudness = nextLoudness;
+
+		// line of sight check
+		float geodesicDist = C * float(nextDelay) / fSamplingRate;
+		int r2, c2;
+		INDEX_TO_POS(r2, c2, nextIndex, dim);
+
+		// convert grid position to worldspace
+		float ex = r2 * cellSize;
+		float ey = c2 * cellSize;
+
+		// find vector between and normalize
+		float2 temp = float2(ex - listenerPos.x, ey - listenerPos.y);
+		float euclideanDist = (temp.x * temp.x) + (temp.y * temp.y);
+		euclideanDist = sqrt(euclideanDist);
+		float distCheck = abs(geodesicDist - euclideanDist);
+		bool isInLineOfSight = distCheck < thresholdDist;
+		if (isInLineOfSight)
+		{
+			break;
+		}
+	}
+
+
+	// find direction vector between nextIndex and listener position
+
+	// convert 1D index to 2D grid position
+	int r, c;
+	INDEX_TO_POS(r, c, nextIndex, dim);
+
+	// convert grid position to worldspace
+	float ex = r * cellSize;
+	float ey = c * cellSize;
+
+	// find vector between and normalize
+	float2 output = float2(ex - listenerPos.x, ey - listenerPos.y);
+	float length = (output.x * output.x) + (output.y * output.y);
+	if (length != 0.0)
+	{
+		length = sqrt(length);
+		output.x /= length;
+		output.y /= length;
+	}
+
+	analyzerGrid[serialIndex].direction = output;
+}

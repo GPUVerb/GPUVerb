@@ -46,11 +46,6 @@ namespace GPUVerb
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern float PlaneverbGetEFree(int gridId, uint serialIndex);
 
-        AnalyzerResult[,] m_AnalyzerGrid;
-        Vector2Int gridSizeInCells;
-
-        public override AnalyzerResult[,] GetGrid() => m_AnalyzerGrid;
-
         public AnalyzerRef(Vector2 gridSize, Vector2Int in_gridSizeInCells, PlaneverbResolution res, int gridId) : base()
         {
             this.gridSizeInCells = in_gridSizeInCells;

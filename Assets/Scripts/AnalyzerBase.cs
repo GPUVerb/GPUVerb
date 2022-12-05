@@ -67,19 +67,25 @@ namespace GPUVerb
         protected uint m_gridY;
         protected int m_responseLength;
         protected uint m_samplingRate;
-        protected float m_dx;
-        protected int m_numThreads;
-        protected int m_resolution;
+        protected float m_cellSize;
+        protected PlaneverbResolution m_resolution;
+
+
+        protected AnalyzerResult[,] m_AnalyzerGrid;
+        protected Vector2Int gridSizeInCells;
+
+        public AnalyzerResult[,] GetGrid() => m_AnalyzerGrid;
+
+        // Only for AnalyzerRef
         protected int m_id;
         public int ID { get => m_id; }
+
         public AnalyzerBase()
         {
         }
-        //private AnalyzerBase() { }
         public virtual int GetResponseLength() => m_responseLength;
         public abstract void AnalyzeResponses(Vector3 listener);
         public abstract AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos);
-        public abstract AnalyzerResult[,] GetGrid();
 
         /*public Vector2Int ToGridPos(Vector2 pos)
         {
