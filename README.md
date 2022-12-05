@@ -27,11 +27,13 @@ Below is a flowchart of how this would operate within a game engine.
 
 ## Finite Difference Time Domain (FDTD) Solver
 The FDTD solver allows us to accurately simulate the wave-based nature of sound. The scene geometry is first rasterized to a 2D plane fixed at the listener's head position. 
+
 ![](./ReadmeImgs/rasterization.png)
 
 Then 2D sound wave propagation is simulated within this plane, as an approximation of the simulation in 3D. We optimze the FDTD solver further by moving some computation from CPU to GPU (using compute shader). (more about this in the [Performance Optimization Section](#performance-analysis))
 
 Below is a simple visualization of the pressure output of the solver.
+
 ![](./ReadmeImgs/fdtd_demo.gif)
 
 ## Analyzer
