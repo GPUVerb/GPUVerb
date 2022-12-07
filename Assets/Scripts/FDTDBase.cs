@@ -211,8 +211,9 @@ namespace GPUVerb
             m_pendingUpdates[id].type = GeomtryUpdateInfo.Type.REMOVE;
         }
 
-        protected void ProcessGeometryUpdates()
+        public bool ProcessGeometryUpdates()
         {
+            bool ret = false;
             for(int id = 0; id < m_pendingUpdates.Count; ++id)
             {
                 if(m_pendingUpdates[id].processed)
@@ -220,7 +221,9 @@ namespace GPUVerb
                     continue;
                 }
 
-                if(m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.ADD)
+                ret = true;
+
+                if (m_pendingUpdates[id].type == GeomtryUpdateInfo.Type.ADD)
                     // same as update but makes it a case anyway
                     // because FDTDRef needs this distinction
                 {
@@ -243,6 +246,7 @@ namespace GPUVerb
                 // mark as processed
                 m_pendingUpdates[id].processed = true;
             }
+            return ret;
         }
         protected abstract void DoAddGeometry(int id, in PlaneVerbAABB geom);
         protected abstract void DoRemoveGeometry(int id);
