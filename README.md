@@ -37,7 +37,7 @@ Below is a simple visualization of the pressure output of the solver.
 ![](./ReadmeImgs/fdtd_demo.gif)
 
 ## Analyzer
-The analyzer is wholly based on the implementation described in the paper. Each analyzer grid cell takes in the chain of samples at corresponding cell from FDTD grid output, and then we process and calculate physics data into acoustic parameters which can be used at next stage (digital Signal Processor). We optimize the Analyzer sovler further by moving all calculation at each data cell from CPU to GPU (using compute shdaer).  (more about this in the [Performance Optimization Section](#performance-analysis))
+The analyzer is wholly based on the implementation described in the paper. Each analyzer grid cell takes in the chain of samples at corresponding cell from FDTD grid output, and then we process and calculate physics data into acoustic parameters which can be used at next stage (digital Signal Processor). We optimize the Analyzer sovler further by moving all calculation at each data cell from CPU to GPU (using compute shdaer).  (more about this in the [Performance Optimization Section](#performance-optimization))
 
 ## Digital Signal Processor (DSP)
 The digital signal processor (DSP) is built with Unity's Spatializer SDK, which is in turn built on Unity's Native Audio SDK. Essentially, a C++ processor is built into a .dll to be incorporated into the Unity engine as a per-source spatializing plugin. This is currently not incorporated within the project; instead the original C++ DSP is used from the base Planeverb project.
