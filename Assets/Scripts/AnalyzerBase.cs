@@ -72,7 +72,8 @@ namespace GPUVerb
 
 
         protected AnalyzerResult[,] m_AnalyzerGrid;
-        protected Vector2Int gridSizeInCells;
+        protected Vector2Int m_gridSizeInCells;
+        protected FDTDBase m_fdtd;
 
         public AnalyzerResult[,] GetGrid() => m_AnalyzerGrid;
 
@@ -80,21 +81,18 @@ namespace GPUVerb
         protected int m_id;
         public int ID { get => m_id; }
 
-        public AnalyzerBase()
+        public AnalyzerBase(FDTDBase fdtd)
         {
+            m_gridSizeInCells = fdtd.GetGridSizeInCells();
+            m_resolution = fdtd.GetResolution();
+            m_AnalyzerGrid = new AnalyzerResult[m_gridSizeInCells.x, m_gridSizeInCells.y];
+            m_fdtd = fdtd;
         }
-        public virtual int GetResponseLength() => m_responseLength;
-        public abstract void AnalyzeResponses(Vector3 listener);
-        public abstract AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos);
+        private AnalyzerBase() { }
 
-        /*public Vector2Int ToGridPos(Vector2 pos)
-        {
-            return new Vector2Int(
-                Mathf.FloorToInt(pos.x / m_cellSize),
-                Mathf.FloorToInt(pos.y / m_cellSize)
-            );
-        }*/
-        //public Vector2Int GetGridSizeInCells() => m_gridSizeInCells;
+        public virtual int GetResponseLength() => m_responseLength;
+        public abstract void AnalyzeResponses(IFDTDResult result, Vector3 listener);
+        public abstract AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos);
         public abstract void Dispose();
 
         #region DEBUG

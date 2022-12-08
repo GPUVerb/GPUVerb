@@ -26,9 +26,28 @@ namespace GPUVerb
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern void PlaneverbRemoveAABB(int gridId, PlaneVerbAABB aabb);
 
+        public class Result : IFDTDResult
+        {
+            private Cell[,,] m_grid;
+            public Result(Cell[,,] grid)
+            {
+                m_grid = grid;
+            }
+            private Result() { }
+            public Cell this[int x, int y, int t] 
+            { 
+                get => m_grid[x, y, t];
+            }
 
+            public Array ToArray() => m_grid;
+        }
 
-        int m_numSamples;
+        private int m_numSamples;
+        private Cell[,,] m_grid;
+        public override IFDTDResult GetGrid()
+        {
+            return new Result(m_grid);
+        }
 
         public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -38,14 +57,11 @@ namespace GPUVerb
         }
         public override void GenerateResponse(Vector3 listener)
         {
-            ProcessGeometryUpdates();
             unsafe
             {
                 fixed(Cell* ptr = m_grid)
                 {
                     PlaneverbGetGridResponse(m_id, listener.x, listener.z, (IntPtr)ptr);
-/*                    Vector2Int temp = ToGridPos(new Vector2(18, 5));
-                    Debug.Log("FDTD: " + m_grid[temp.x, temp.y, m_numSamples - 1]);*/
                 }
             }
         }
@@ -70,6 +86,5 @@ namespace GPUVerb
         {
             PlaneverbDestroyGrid(m_id);
         }
-
     }
 }

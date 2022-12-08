@@ -945,7 +945,6 @@ MonoBehaviour:
   m_cubeSize: 0.1
   m_baseHeight: 0
   m_motionScale: 2
-  m_simTime: 4
   m_listener: {fileID: 328128101}
 --- !u!4 &824056850
 Transform:
@@ -1126,6 +1125,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453768, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
+      propertyPath: m_useRefClass
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

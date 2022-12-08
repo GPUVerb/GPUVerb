@@ -18,13 +18,10 @@ namespace GPUVerb
         float m_baseHeight = 0;
         [SerializeField]
         float m_motionScale = 10;
-        [SerializeField]
-        float m_simTime = 4f;
 
         [SerializeField]
         Transform m_listener = null;
 
-        bool m_simFinished = true;
 
         class AnalyzerInfo
         {
@@ -82,7 +79,7 @@ namespace GPUVerb
             FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
 
             FDTDsolver.GenerateResponse(m_listener.position);
-            solver.AnalyzeResponses(m_listener.position);
+            solver.AnalyzeResponses(FDTDsolver.GetGrid(), m_listener.position);
 
             foreach (AnalyzerInfo info in m_cubeInfos)
             {
@@ -120,95 +117,5 @@ namespace GPUVerb
                 Gizmos.DrawWireSphere(m_listener.position, 0.2f);
             }
         }
-
-
-        /*private void AnalyzerUnitTest()
-        {
-            bool Check(AnalyzerResult[,] arr1, AnalyzerResult[,] arr2)
-            {
-                int mismatch = 0;
-                for (int i = 0; i < arr1.GetLength(0); ++i)
-                {
-                    for (int j = 0; j < arr1.GetLength(1); ++j)
-                    {
-                        if (!arr1[i, j].Equals(arr2[i, j]))
-                        {
-                            ++mismatch;
-                        }
-                    }
-                }
-                if (mismatch > 0)
-                {
-                    Debug.LogError($"{mismatch} out of {arr1.GetLength(0) * arr1.GetLength(1) * arr1.GetLength(2)}");
-                    return false;
-                }
-                return true;
-            }
-
-            Vector2 gridSize = new Vector2(5, 5);
-            FDTDBase correct = new AnalyzerRef(gridSize, PlaneverbResolution.LowResolution);
-            FDTDBase fdtd = new FDTD(gridSize, PlaneverbResolution.LowResolution);
-
-            Vector2Int gridSizeInCells = correct.GetGridSizeInCells();
-            int numSamples = correct.GetResponseLength();
-
-
-            Debug.Assert(gridSizeInCells == fdtd.GetGridSizeInCells());
-            Debug.Assert(numSamples == fdtd.GetResponseLength());
-
-            Cell[,,] c1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-            Cell[,,] c2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-
-            correct.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
-            fdtd.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
-
-            correct.GenerateResponse(Vector3.zero);
-            fdtd.GenerateResponse(Vector3.zero);
-
-            for (int x = 0; x < gridSizeInCells.x; ++x)
-            {
-                for (int y = 0; y < gridSizeInCells.y; ++y)
-                {
-                    int z = 0;
-                    foreach (Cell c in correct.GetResponse(new Vector2Int(x, y)))
-                    {
-                        c1[x, y, z] = c;
-                        ++z;
-                    }
-                    z = 0;
-                    foreach (Cell c in fdtd.GetResponse(new Vector2Int(x, y)))
-                    {
-                        c2[x, y, z] = c;
-                        ++z;
-                    }
-                }
-            }
-
-            if (Check(c1, c2))
-            {
-                Debug.Log("FDTD unit test passed");
-            }
-            else
-            {
-                StringBuilder sb1 = new();
-                StringBuilder sb2 = new();
-                int iter = 2;
-                for (int x = 0; x < gridSizeInCells.x; ++x)
-                {
-                    for (int y = 0; y < gridSizeInCells.y; ++y)
-                    {
-                        sb1.Append(c1[x, y, iter].ToString(true)); sb1.Append(',');
-                        sb2.Append(c2[x, y, iter].ToString(true)); sb2.Append(',');
-                    }
-                    sb1.AppendLine(); sb2.AppendLine();
-                }
-                Debug.Log(sb1.ToString());
-                Debug.Log(sb2.ToString());
-                Debug.Log("FDTD unit test failed");
-            }
-
-            correct.Dispose();
-            fdtd.Dispose();
-        }*/
     }
 }

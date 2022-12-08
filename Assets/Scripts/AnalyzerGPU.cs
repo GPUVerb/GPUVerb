@@ -47,7 +47,6 @@ namespace GPUVerb
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         int[] m_delaySamples;
 
-
         //FreeGrid precomputation
         float m_EFree;
 
@@ -56,8 +55,8 @@ namespace GPUVerb
             //this fdtd grid should have the same grid data as our fdtd grid
             FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
 
-            int listenerX = gridSizeInCells.x / 2;
-            int listenerY = gridSizeInCells.y / 2;
+            int listenerX = m_gridSizeInCells.x / 2;
+            int listenerY = m_gridSizeInCells.y / 2;
             int emitterX = listenerX + (int)(1.0f / m_cellSize);// still not sure why adding this
             int emitterY = listenerY;
 
@@ -83,7 +82,7 @@ namespace GPUVerb
                 ++count;
             }
 
-            float r = (float)(emitterX - emitterY) * m_cellSize;
+            float r = (emitterX - emitterY) * m_cellSize;
             efree *= r;
             m_EFree = efree;
         }
@@ -91,15 +90,15 @@ namespace GPUVerb
         void AnalyerInitSetup()
         {
             FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
-            this.gridSizeInCells = FDTDsolver.GetGridSizeInCells();
-            this.m_responseLength = FDTDsolver.GetResponseLength();
-            this.m_samplingRate = FDTDsolver.GetSamplingRate();
-            this.m_cellSize = FDTDsolver.GetCellSize();
-            this.m_resolution = FDTDsolver.GetResolution();
+            m_gridSizeInCells = FDTDsolver.GetGridSizeInCells();
+            m_responseLength = FDTDsolver.GetResponseLength();
+            m_samplingRate = FDTDsolver.GetSamplingRate();
+            m_cellSize = FDTDsolver.GetCellSize();
+            m_resolution = FDTDsolver.GetResolution();
             SimulateFreeFieldEnergy();
         }
 
-        public AnalyzerGPU() : base()
+        public AnalyzerGPU(FDTDBase fdtd) : base(fdtd)
         {
             AnalyerInitSetup();
 
@@ -110,15 +109,24 @@ namespace GPUVerb
             m_shader.GetKernelThreadGroupSizes(m_encodeResponseKernel, out uint x, out uint y, out uint _);
             m_threadGroupDim = new Vector2Int((int)x, (int)y);
 
-            int planeSize = gridSizeInCells.x * gridSizeInCells.y;
+            int planeSize = m_gridSizeInCells.x * m_gridSizeInCells.y;
             int totalSize = planeSize * m_responseLength;
 
-            m_FDTDgridBuffer = new ComputeBuffer(totalSize, Marshal.SizeOf(typeof(Cell)));
+            if(fdtd is FDTD)
+            {
+                // share buffer with fdtd
+                m_FDTDgridBuffer = null;
+            }
+            else
+            {
+                m_FDTDgridBuffer = new ComputeBuffer(totalSize, Marshal.SizeOf(typeof(Cell)));
+            }
+
             m_analyzerGridBuffer = new ComputeBuffer(planeSize, Marshal.SizeOf(typeof(AnalyzerResult)));
             m_delaySamplesBuffer = new ComputeBuffer(planeSize, sizeof(int));
 
             // set some constant parameters in shader
-            m_shader.SetInts(k_gridDimShaderParam, new int[] { gridSizeInCells.x, gridSizeInCells.y });
+            m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y });
             m_shader.SetFloat(k_cellSizeShaderParam, m_cellSize);
             m_shader.SetFloat(k_samplingRateShaderParam, m_samplingRate);
             m_shader.SetFloat(k_responseLengthShaderParam, m_responseLength);
@@ -134,7 +142,6 @@ namespace GPUVerb
             m_shader.SetInt(k_delayCloseThresholdShaderParam, InternalConstants.GV_DELAY_CLOSE_THRESHOLD);
             m_shader.SetFloat(k_distanceGainThresholdShaderParam, InternalConstants.GV_DISTANCE_GAIN_THRESHOLD);
 
-            m_AnalyzerGrid = new AnalyzerResult[gridSizeInCells.x, gridSizeInCells.y];
             m_delaySamples = new int[planeSize];
         }
 
@@ -145,7 +152,7 @@ namespace GPUVerb
             return new Vector2Int(gridDimX, gridDimY);
         }
 
-        public override void AnalyzeResponses(Vector3 listener)
+        public override void AnalyzeResponses(IFDTDResult result, Vector3 listener)
         {
             /*Vector3 listenerPos = listener;
             Plus grid offset
@@ -155,12 +162,20 @@ namespace GPUVerb
             int maxVal = int.MaxValue;
             Array.Fill<int>(m_delaySamples, maxVal);
 
-            Vector2Int dim = GetDispatchDim(gridSizeInCells);
+            Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
 
             //Ecode Response Compute shader calls
-            FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
-            // Copy FDTD grid data into compute shader
-            m_FDTDgridBuffer.SetData(FDTDsolver.GetGrid());
+            if(result is FDTD.Result)
+            {
+                // share buffer with fdtd if it's also the GPU version
+                m_FDTDgridBuffer = (result as FDTD.Result).GetComputeBuffer();
+            }
+            else
+            {
+                // Copy FDTD grid data into compute shader
+                m_FDTDgridBuffer.SetData(result.ToArray());
+            }
+
             // bind FDTD grid
             m_shader.SetBuffer(m_encodeResponseKernel, k_FDTDgridShaderParam, m_FDTDgridBuffer);
             // bind analyzer grid
@@ -190,7 +205,7 @@ namespace GPUVerb
         }
         public override AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos)
         {
-            if (gridPos.x >= gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= gridSizeInCells.y || gridPos.y < 0)
+            if (gridPos.x >= m_gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= m_gridSizeInCells.y || gridPos.y < 0)
             {
                 Debug.Log("Access outside of Analyzer Grid");
                 return new AnalyzerResult();

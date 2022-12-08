@@ -46,11 +46,17 @@ namespace GPUVerb
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern float PlaneverbGetEFree(int gridId, uint serialIndex);
 
-        public AnalyzerRef(Vector2 gridSize, Vector2Int in_gridSizeInCells, PlaneverbResolution res, int gridId) : base()
+        public AnalyzerRef(FDTDBase fdtd) : base(fdtd)
         {
-            this.gridSizeInCells = in_gridSizeInCells;
-            PlaneverbCreateConfig(gridSize.x, gridSize.y, (int)res);
+            Vector2 gridSize = fdtd.GetGridSize();
+            PlaneverbCreateConfig(gridSize.x, gridSize.y, (int)m_resolution);
 
+            if(!(fdtd is FDTDRef))
+            {
+                Debug.LogError("cannot use Analyzer ref with fdtd GPU");
+                return;
+            }
+            int gridId = fdtd.ID;
             /*m_id = PlaneverbCreateEmissionManager();
             Debug.Assert(m_id == gridId);*/
 
@@ -59,10 +65,8 @@ namespace GPUVerb
 
             m_id = PlaneverbCreateAnalyzer(gridId);
             Debug.Assert(m_id == gridId);
-
-            m_AnalyzerGrid = new AnalyzerResult[gridSizeInCells.x, gridSizeInCells.y];
         }
-        public override void AnalyzeResponses(Vector3 listener)
+        public override void AnalyzeResponses(IFDTDResult result, Vector3 listener)
         {
             unsafe
             {
@@ -82,7 +86,7 @@ namespace GPUVerb
 
         public override AnalyzerResult GetAnalyzerResponse(Vector2Int gridPos)
         {
-            if (gridPos.x >= gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= gridSizeInCells.y || gridPos.y < 0)
+            if (gridPos.x >= m_gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= m_gridSizeInCells.y || gridPos.y < 0)
             {
                 Debug.Log("Access outside of Analyzer Grid");
                 return new AnalyzerResult();

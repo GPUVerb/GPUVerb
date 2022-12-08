@@ -71,6 +71,14 @@ namespace GPUVerb
         }
     }
 
+    // this is needed because we want to make AnalyzerGPU/Ref class to work
+    // with any of FDTDGPU/Ref
+    public interface IFDTDResult
+    {
+        Cell this[int x, int y, int t] { get; }
+        Array ToArray();
+    }
+
     public abstract class FDTDBase : IDisposable
     {
         public class GeomtryUpdateInfo
@@ -120,7 +128,6 @@ namespace GPUVerb
         private List<GeomtryUpdateInfo> m_pendingUpdates;
         #endregion
 
-        protected Cell[,,] m_grid;
 
         public virtual int GetResponseLength() => m_responseLength;
         public Vector2 GetGridSize() => m_gridSize;
@@ -128,7 +135,6 @@ namespace GPUVerb
         public float GetCellSize() => m_cellSize;
         public PlaneverbResolution GetResolution() => m_resolution;
         public uint GetSamplingRate() => m_samplingRate;
-        public Cell[,,] GetGrid() => m_grid;
 
         // TODO: remove ID
         protected int m_id;
@@ -160,15 +166,18 @@ namespace GPUVerb
 
 
         public abstract void GenerateResponse(Vector3 listener);
+
+        public abstract IFDTDResult GetGrid();
         public IEnumerable<Cell> GetResponse(Vector2Int gridPos)
         {
-            if (gridPos.x >= m_grid.GetLength(0) || gridPos.x < 0 || gridPos.y >= m_grid.GetLength(1) || gridPos.y < 0)
+            IFDTDResult grid = GetGrid();
+            if (gridPos.x >= m_gridSizeInCells.x || gridPos.x < 0 || gridPos.y >= m_gridSizeInCells.y || gridPos.y < 0)
             {
                 yield break;
             }
             for (int i = 0; i < GetResponseLength(); ++i)
             {
-                yield return m_grid[gridPos.x, gridPos.y, i];
+                yield return grid[gridPos.x, gridPos.y, i];
             }
         }
         public int AddGeometry(in PlaneVerbAABB geom)

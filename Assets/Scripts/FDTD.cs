@@ -3,12 +3,48 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace GPUVerb
 {
     // TODO: our implementaiton of FDTD using compute shader
     public class FDTD : FDTDBase
     {
+        public class Result : IFDTDResult
+        {
+            private ComputeBuffer m_buf;
+            private Cell[,,] m_grid;
+            private int m_xdim, m_ydim, m_zdim;
+            private Cell[,,] Grid
+            {
+                get
+                {
+                    if (m_grid == null)
+                    {
+                        m_grid = new Cell[m_xdim, m_ydim, m_zdim];
+                        m_buf.GetData(m_grid);
+                    }
+                    return m_grid;
+                }
+            }
+
+            public Result(ComputeBuffer buf, int xdim, int ydim, int zdim)
+            {
+                m_buf = buf;
+                m_grid = null;
+                m_xdim = xdim;
+                m_ydim = ydim;
+                m_zdim = zdim;
+            }
+            private Result() { }
+            public Cell this[int x, int y, int t]
+            {
+                get => Grid[x, y, t];
+            }
+            public ComputeBuffer GetComputeBuffer() => m_buf;
+            public Array ToArray() => Grid;
+        }
+
         const string k_gridShaderParam = "grid";
         const string k_gridInShaderParam = "gridIn";
         const string k_gridOutShaderParam = "gridOut";
@@ -27,7 +63,6 @@ namespace GPUVerb
         const string k_AddGeomKernelName = "KernAddBounds";
         const string k_RemoveGeomKernelName = "KernRemoveBounds";
 
-
         ComputeShader m_shader = null;
         ComputeBuffer m_gaussianBuffer = null;
         ComputeBuffer m_boundaryBuffer = null;
@@ -42,6 +77,8 @@ namespace GPUVerb
 
         Vector2Int m_threadGroupDim = Vector2Int.zero;
         float[] m_gaussianPulse;
+
+        Result m_curResult;
 
         public FDTD(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
@@ -65,8 +102,6 @@ namespace GPUVerb
             m_gridInputBuf = new ComputeBuffer(planeSize, Marshal.SizeOf(typeof(Cell)));
             m_gridBuf = new ComputeBuffer(totalSize, Marshal.SizeOf(typeof(Cell)));
 
-            m_grid = new Cell[m_gridSizeInCells.x, m_gridSizeInCells.y, GetResponseLength()];
-
             m_gaussianPulse = new float[numSamples];
             float sigma = 1.0f / (0.5f * Mathf.PI * (float)res);
             float delay = 2 * sigma;
@@ -86,6 +121,11 @@ namespace GPUVerb
             m_gridInputBuf.SetData(gridInitValue);
         }
 
+        public override IFDTDResult GetGrid()
+        {
+            return m_curResult;
+        }
+
         Vector2Int GetDispatchDim(Vector2Int inputDim)
         {
             int gridDimX = (inputDim.x + m_threadGroupDim.x - 1) / m_threadGroupDim.x;
@@ -95,8 +135,6 @@ namespace GPUVerb
 
         public override void GenerateResponse(Vector3 listener)
         {
-            ProcessGeometryUpdates();
-
             Vector2Int listenerPosGrid = ToGridPos(new Vector2(listener.x, listener.z));
             Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
 
@@ -143,8 +181,7 @@ namespace GPUVerb
                 // result should be in the inBuf because it's swapped before loop exit
             }
 
-            // copy m_gridBuf to grid
-            m_gridBuf.GetData(m_grid);
+            m_curResult = new Result(m_gridBuf, m_gridSizeInCells.x, m_gridSizeInCells.y, GetResponseLength());
         }
 
 
@@ -209,6 +246,5 @@ namespace GPUVerb
             m_gridInputBuf.Dispose();
             m_gridBuf.Dispose();
         }
-
     }
 }
