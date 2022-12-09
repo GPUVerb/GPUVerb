@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace GPUVerb
 {
@@ -14,6 +15,10 @@ namespace GPUVerb
         private Vector2 m_maxCorner = new Vector2(10, 10);
         [SerializeField]
         private PlaneverbResolution m_simulationRes = PlaneverbResolution.LowResolution;
+        [SerializeField]
+        private float m_simulationFreq = 10;
+        private float m_timePerSimFrame = 1;
+        private float m_simTimer = 0;
 
         [SerializeField]
         private DSPConfig m_dspConfig = new DSPConfig();
@@ -39,6 +44,8 @@ namespace GPUVerb
         protected override void Init()
         {
             m_gridSize = new Vector2Int(Mathf.RoundToInt(m_maxCorner.x), Mathf.RoundToInt(m_maxCorner.y));
+            m_timePerSimFrame = 1 / m_simulationFreq;
+
             if (m_useRefClass)
             {
                 m_FDTDSolver = new FDTDRef(m_gridSize, m_simulationRes);
@@ -53,7 +60,17 @@ namespace GPUVerb
             }
         }
 
-        private void LateUpdate()
+        private void Update()
+        {
+            m_simTimer += Time.deltaTime;
+            if(m_simTimer >= m_timePerSimFrame)
+            {
+                Simulate();
+                m_simTimer = 0;
+            }
+        }
+
+        private void Simulate()
         {
             bool shouldSimulate = m_FDTDSolver.ProcessGeometryUpdates();
             bool shouldProcess = false;
@@ -72,8 +89,29 @@ namespace GPUVerb
 
             if (shouldSimulate)
             {
-                Simulate();
+                if (m_FDTDSolver == null)
+                {
+                    Debug.LogError("FDTD Solver not set");
+                    return;
+                }
+                if (m_AnalyzerSolver == null)
+                {
+                    Debug.LogError("Analyzer not set");
+                    return;
+                }
+
+                Profiler.BeginSample("FDTD");
+                // this call may not be synchronous, so we're not doing precise profiling
+                m_FDTDSolver.GenerateResponse(Listener.Position);
+                Profiler.EndSample();
+
+                Profiler.BeginSample("Analyzer");
+                m_AnalyzerSolver.AnalyzeResponses(m_FDTDSolver.GetGrid(), Listener.Position);
+                Profiler.EndSample();
+
                 m_DSP.SetListenerPos(Listener.Position, Listener.Forward);
+
+                Debug.Log("Sim");
             }
             else if(shouldProcess)
             {
@@ -98,24 +136,6 @@ namespace GPUVerb
         {
             m_FDTDSolver.RemoveGeometry(id);
         }
-
-        private void Simulate()
-        {
-            if (m_FDTDSolver == null)
-            {
-                Debug.LogError("FDTD Solver not set");
-                return;
-            }
-            if (m_AnalyzerSolver == null)
-            {
-                Debug.LogError("Analyzer not set");
-                return;
-            }
-
-            m_FDTDSolver.GenerateResponse(Listener.Position);
-            m_AnalyzerSolver.AnalyzeResponses(m_FDTDSolver.GetGrid(), Listener.Position);
-        }
-
         public AnalyzerResult? GetOutput(Vector2Int pos)
         {
             return m_AnalyzerSolver.GetAnalyzerResponse(pos);
