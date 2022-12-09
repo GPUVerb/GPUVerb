@@ -187,9 +187,9 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 	{
 		int wetGainSamples = int(WET_GAIN_ANALYSIS_LENGTH * samplingRate);
 		const int end = min(directEnd + 1 + wetGainSamples, numSamples);
-		for (int k = directEnd + 1; k < end; k++)
+		for (int wetIndex = directEnd + 1; wetIndex < end; wetIndex++)
 		{
-			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			float p = FDTDgrid[cellChainStartIndex + wetIndex].pressure;
 			wetEnergy += p * p;
 		}
 	}
@@ -250,20 +250,20 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		float ysum = 0;
 
 		// For tail bit just accumulate energy, no regression
-		for (int k = numSamples - 1; k >= endPoint; --k)
+		for (int sampleIndex = numSamples - 1; sampleIndex >= endPoint; --sampleIndex)
 		{
-			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			float p = FDTDgrid[cellChainStartIndex + sampleIndex].pressure;
 			energyDecayCurve += p * p;
 		}
 
-		for (int k = endPoint - 1; k >= startingPoint; --k)
+		for (int index = endPoint - 1; index >= startingPoint; --index)
 		{
-			float p = FDTDgrid[cellChainStartIndex + k].pressure;
+			float p = FDTDgrid[cellChainStartIndex + index].pressure;
 			energyDecayCurve += p * p;
 			energyDecayCurveDB = 10.0 * log10(energyDecayCurve);
 
 			float y_i = energyDecayCurveDB;
-			float x_i = float(k - startingPoint);
+			float x_i = float(index - startingPoint);
 			xysum += y_i * x_i;
 			ysum += y_i;
 		}
@@ -311,10 +311,10 @@ void KernEncodeListenerDirection(uint3 id : SV_DispatchThreadID)
 		nextDelay = maxDelay;
 
 		// for each neighbor find the neighbor with the smallest delay time
-		for (int k = 0; k < COUNT_NEIGHBOR; ++k)
+		for (int neighborIndex = 0; neighborIndex < COUNT_NEIGHBOR; ++neighborIndex)
 		{
-			int nr = r + POSSIBLE_NEIGHBORS[k].x;
-			int nc = c + POSSIBLE_NEIGHBORS[k].y;
+			int nr = r + POSSIBLE_NEIGHBORS[neighborIndex].x;
+			int nc = c + POSSIBLE_NEIGHBORS[neighborIndex].y;
 			if (nr < 0 || nc < 0 || nr >= dim.x || nc >= dim.y)
 			{
 				continue;
