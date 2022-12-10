@@ -109,8 +109,8 @@ namespace GPUVerb
             m_simFinished = false;
             
             Vector2 gridSize = GPUVerbContext.Instance.MaxCorner;
-            using FDTDBase solver = new FDTDGPU(gridSize, GPUVerbContext.Instance.SimulationRes);
-            
+            using FDTDBase solver = new FDTDGPU2(gridSize, GPUVerbContext.Instance.SimulationRes);
+            Debug.Log($"Simulate using {solver.GetType().Name}");
             var gameObjs = SceneManager.GetActiveScene().GetRootGameObjects();
             foreach(var go in gameObjs)
             {
@@ -237,6 +237,8 @@ namespace GPUVerb
                 return true;
             }
 
+            Debug.Log("Begin FDTD unit test");
+
             Vector2 gridSize = new Vector2(5, 5);
             using FDTDBase correct = new FDTDGPU(gridSize, PlaneverbResolution.LowResolution);
             using FDTDBase fdtd = new FDTDGPU2(gridSize, PlaneverbResolution.LowResolution);
@@ -318,6 +320,8 @@ namespace GPUVerb
                 Array.Copy(c1, last1, linearSize);
                 Array.Copy(c2, last2, linearSize);
             }
+
+            Debug.Log("end FDTD unit test");
         }
     }
 }

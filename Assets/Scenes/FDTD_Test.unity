@@ -877,6 +877,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
+      propertyPath: m_maxCorner.x
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_useRefClass
       value: 0
       objectReference: {fileID: 0}

@@ -1,6 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel KernEncodeResponse
 #pragma kernel KernEncodeListenerDirection
+#pragma multi_compile USE_FLAT_INDEXING
 
 struct Cell {
 	float pressure;
@@ -51,7 +52,6 @@ const int2 POSSIBLE_NEIGHBORS[] =
 };
 const int COUNT_NEIGHBOR = 8;
 
-
 #define IDX(i,j,dim) ((i) * dim[1] + (j))
 #define INDEX_TO_POS(ISET, JSET, i, dim) (ISET) = i / int(dim[1]); (JSET) = i - (i / int(dim[1])) * int(dim[1])
 #define VALID(i,j,dim) ((i) < dim[0] && (j) < dim[1])
@@ -87,7 +87,12 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 	}
 	const int serialIndex = IDX(i, j, gridDim);
 	const int numSamples = responseLength;
-	const int cellChainStartIndex = i * gridDim[1] * numSamples + j * numSamples;
+
+#ifdef USE_FLAT_INDEXING
+#define IDX3(x,y,t) ((t) * gridDim[0] * gridDim[1] + (y) * gridDim[1] + (x))
+#else
+#define IDX3(x,y,t) ((x) * gridDim[1] * numSamples + (y) * numSamples + (t))
+#endif
 
 	// 
 	// ONSET DELAY
@@ -95,7 +100,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 	int onsetSample = 0;
 	for (; onsetSample < numSamples; ++onsetSample)
 	{
-		float next = FDTDgrid[cellChainStartIndex + onsetSample].pressure;
+		const float next = FDTDgrid[IDX3(i, j, onsetSample)].pressure;
 		if (abs(next) > AUDIBLE_THRESHOLD_GAIN)
 		{
 			break;
@@ -134,7 +139,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		int k = 0;
 		for (; k < sourceDirEnd; ++k)
 		{
-			float pr = FDTDgrid[cellChainStartIndex + k].pressure;
+			float pr = FDTDgrid[IDX3(i, j, k)].pressure;
 			pr = pr * pr;
 			Edry += pr;
 			radiationDir.x += pr;
@@ -142,7 +147,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		}
 		for (; k < directEnd; ++k)
 		{
-			float pr = FDTDgrid[cellChainStartIndex + k].pressure; 
+			float pr = FDTDgrid[IDX3(i, j, k)].pressure;
 			Edry += pr * pr;
 		}
 
@@ -178,7 +183,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 	// get input distance driven by inverse of occlusion. If occlusion is very small, cap out at "lots of occlusion"
 	float r = 1.0 / max(0.001, obstructionGain);
 	// Find LPF cutoff frequency by feeding into equation: y = -147 + (18390) / (1 + (x / 12)^0.8 )
-	analyzerGrid[serialIndex].lowpassIntensity = - 147.0 + (18390.0) / (1.0 + pow(r / 12.0, 0.8));
+	analyzerGrid[serialIndex].lowpassIntensity = -147.0 + (18390.0) / (1.0 + pow(r / 12.0, 0.8));
 
 	//
 	// Wet gain
@@ -189,7 +194,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		const int end = min(directEnd + 1 + wetGainSamples, numSamples);
 		for (int wetIndex = directEnd + 1; wetIndex < end; wetIndex++)
 		{
-			float p = FDTDgrid[cellChainStartIndex + wetIndex].pressure;
+			float p = FDTDgrid[IDX3(i, j, wetIndex)].pressure;
 			wetEnergy += p * p;
 		}
 	}
@@ -252,13 +257,13 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		// For tail bit just accumulate energy, no regression
 		for (int sampleIndex = numSamples - 1; sampleIndex >= endPoint; --sampleIndex)
 		{
-			float p = FDTDgrid[cellChainStartIndex + sampleIndex].pressure;
+			float p = FDTDgrid[IDX3(i, j, sampleIndex)].pressure;
 			energyDecayCurve += p * p;
 		}
 
 		for (int index = endPoint - 1; index >= startingPoint; --index)
 		{
-			float p = FDTDgrid[cellChainStartIndex + index].pressure;
+			float p = FDTDgrid[IDX3(i, j, index)].pressure;
 			energyDecayCurve += p * p;
 			energyDecayCurveDB = 10.0 * log10(energyDecayCurve);
 
@@ -278,7 +283,7 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 }
 
 
-[numthreads(8,8,1)]
+[numthreads(8, 8, 1)]
 void KernEncodeListenerDirection(uint3 id : SV_DispatchThreadID)
 {
 	// column major, since we store data in c# array as [x,y,z]
@@ -326,8 +331,7 @@ void KernEncodeListenerDirection(uint3 id : SV_DispatchThreadID)
 			if (delay == responseLength || result.occlusion == 0.0)
 			{
 				continue;
-			}
-			else if (delay < nextDelay && result.occlusion > 0.0)
+			} else if (delay < nextDelay && result.occlusion > 0.0)
 			{
 				nextLoudness = result.occlusion;
 				nextIndex = newPosIndex;

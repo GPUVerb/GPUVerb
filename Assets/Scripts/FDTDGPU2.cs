@@ -13,15 +13,15 @@ namespace GPUVerb
         public class Result : IFDTDResult
         {
             private ComputeBuffer m_buf;
-            private Cell[,,] m_grid;
+            private Cell[] m_grid;
             private int m_xdim, m_ydim, m_zdim;
-            private Cell[,,] Grid
+            private Cell[] Grid
             {
                 get
                 {
                     if (m_grid == null)
                     {
-                        m_grid = new Cell[m_xdim, m_ydim, m_zdim];
+                        m_grid = new Cell[m_xdim * m_ydim * m_zdim];
                         m_buf.GetData(m_grid);
                     }
                     return m_grid;
@@ -39,7 +39,7 @@ namespace GPUVerb
             private Result() { }
             public Cell this[int x, int y, int t]
             {
-                get => Grid[x, y, t];
+                get => Grid[t * m_xdim * m_ydim + y * m_xdim + x];
             }
             public ComputeBuffer GetComputeBuffer() => m_buf;
             public Array ToArray() => Grid;
@@ -108,17 +108,12 @@ namespace GPUVerb
             m_gaussianBuffer.SetData(m_gaussianPulse);
 
             // TODO: any better way to do this?
-            Cell[] data = new Cell[totalSize];
-            for(int i = 0; i < m_gridSizeInCells.x; ++i)
+            Cell[] data = new Cell[planeSize];
+            for(int i = 0; i < planeSize; ++i)
             {
-                for (int j = 0; j < m_gridSizeInCells.y; ++j)
-                {
-                    Cell c = data[i * m_gridSizeInCells.y * m_responseLength + j * m_responseLength];
-                    c.b = 1; c.by = 1;
-                    data[i * m_gridSizeInCells.y * m_responseLength + j * m_responseLength] = c;
-                }
+                data[i].b = data[i].by = 1;
             }
-            m_gridBuf.SetData(data);
+            m_gridBuf.SetData(data, 0, 0, planeSize);
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y, m_responseLength });
         }

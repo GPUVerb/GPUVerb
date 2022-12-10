@@ -103,6 +103,12 @@ namespace GPUVerb
             AnalyerInitSetup();
 
             m_shader = Resources.Load<ComputeShader>(k_shaderPath);
+            if(fdtd is FDTDGPU2)
+            {
+                // needed because FDTDGPU2 uses different memory layout for the output 3d array
+                m_shader.EnableKeyword("USE_FLAT_INDEXING");
+            }
+
             m_encodeResponseKernel = m_shader.FindKernel(k_EncodeResponseKernelName);
             m_encodeListenerDirectionKernel = m_shader.FindKernel(k_EncodeListenerDirectionKernelName);
 
