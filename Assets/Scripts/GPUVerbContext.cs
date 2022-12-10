@@ -36,10 +36,11 @@ namespace GPUVerb
 
         public Vector2 MinCorner { get => m_minCorner; }
         public Vector2 MaxCorner { get => m_maxCorner; }
+        public PlaneverbResolution SimulationRes { get => m_simulationRes; }
+
         public FDTDBase FDTDSolver { get => m_FDTDSolver; }
         public AnalyzerBase AnalyzerSolver { get => m_AnalyzerSolver; }
         public DSPBase DSP { get => m_DSP; }
-
 
         protected override void Init()
         {
@@ -48,13 +49,13 @@ namespace GPUVerb
 
             if (m_useRefClass)
             {
-                m_FDTDSolver = new FDTDRef(m_gridSize, m_simulationRes);
+                m_FDTDSolver = new FDTDCPU(m_gridSize, m_simulationRes);
                 m_AnalyzerSolver = new AnalyzerRef(m_FDTDSolver);
                 m_DSP = new DSPRef(m_dspConfig);
             }
             else
             {
-                m_FDTDSolver = new FDTD(m_gridSize, m_simulationRes);
+                m_FDTDSolver = new FDTDGPU2(m_gridSize, m_simulationRes);
                 m_AnalyzerSolver = new AnalyzerGPU(m_FDTDSolver);
                 m_DSP = new DSPRef(m_dspConfig);
             }
@@ -110,8 +111,6 @@ namespace GPUVerb
                 Profiler.EndSample();
 
                 m_DSP.SetListenerPos(Listener.Position, Listener.Forward);
-
-                Debug.Log("Sim");
             }
             else if(shouldProcess)
             {

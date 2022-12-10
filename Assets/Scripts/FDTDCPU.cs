@@ -9,7 +9,7 @@ namespace GPUVerb
 {
     // DONE: call into the planeverb DLL
     // this is a wrapper for the planeverb FDTD to test our FDTD's correctness
-    public class FDTDRef : FDTDBase
+    public class FDTDCPU : FDTDBase
     {
         [DllImport("ProjectPlaneverbUnityPlugin.dll")]
         static extern int PlaneverbCreateGrid(float sizeX, float sizeY, int gridResolution);
@@ -49,7 +49,7 @@ namespace GPUVerb
             return new Result(m_grid);
         }
 
-        public FDTDRef(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
+        public FDTDCPU(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
             m_id = PlaneverbCreateGrid(gridSize.x, gridSize.y, (int)res);
             m_numSamples = PlaneverbGetGridResponseLength(m_id);

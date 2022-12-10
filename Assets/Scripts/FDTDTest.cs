@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Text;
 
 
@@ -29,7 +30,7 @@ namespace GPUVerb
         {
             public GameObject ins;
             public Vector2 pos;
-            public IEnumerator<Cell> cur;
+            public int curSample;
         }
 
         List<Info> m_cubeInfos = new List<Info>();
@@ -77,19 +78,18 @@ namespace GPUVerb
             }
         }
 
-        void GetData()
+        IFDTDResult GetData(FDTDBase solver)
         {
-            FDTDBase solver = GPUVerbContext.Instance.FDTDSolver;
-
-            solver.GenerateResponse(m_listener.position);
+            solver.GenerateResponse(Listener.Position);
+            IFDTDResult res = solver.GetGrid();
 
             foreach (Info info in m_cubeInfos)
             {
-                info.cur = solver.GetResponse(solver.ToGridPos(info.pos)).GetEnumerator();
+                info.curSample = 0;
             }
 
             int cnt = 0;
-            Trav(solver, -1, (Cell c) =>
+            Trav(res, solver, -1, (Cell c) =>
             {
                 if (Mathf.Approximately(0, c.pressure))
                     ++cnt;
@@ -101,14 +101,29 @@ namespace GPUVerb
             {
                 Debug.LogError("FDTD response is all zero");
             }
+            return res;
         }
 
         IEnumerator Simulate()
         {
             m_simFinished = false;
-            GetData();
+            
+            Vector2 gridSize = GPUVerbContext.Instance.MaxCorner;
+            using FDTDBase solver = new FDTDGPU(gridSize, GPUVerbContext.Instance.SimulationRes);
+            
+            var gameObjs = SceneManager.GetActiveScene().GetRootGameObjects();
+            foreach(var go in gameObjs)
+            {
+                var geoms = go.GetComponentsInChildren<FDTDGeometry>();
+                foreach(var geom in geoms)
+                {
+                    solver.AddGeometry(geom.GetBounds());
+                }
+            }
+            solver.ProcessGeometryUpdates();
+            IFDTDResult res = GetData(solver);
 
-            int numSamples = GPUVerbContext.Instance.FDTDSolver.GetResponseLength();
+            int numSamples = solver.GetResponseLength();
             int lastSample = -1;
             for(float curTime = 0; curTime <= m_simTime; curTime += Time.deltaTime)
             {
@@ -122,11 +137,12 @@ namespace GPUVerb
                 {
                     if(lastSample != sample)
                     {
-                        info.cur.MoveNext();
+                        ++info.curSample;
                     }
 
-                    Cell data = info.cur.Current;
-                    float pr = data.pressure;
+                    Vector2Int posGrid = solver.ToGridPos(info.pos);
+
+                    float pr = res[posGrid.x, posGrid.y, info.curSample].pressure;
                     float h = m_baseHeight + m_motionScale * pr;
                     info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
                 }
@@ -161,7 +177,7 @@ namespace GPUVerb
             }
         }
 
-        void Trav(FDTDBase solver, int iter, Action<Cell> func)
+        void Trav(IFDTDResult res, FDTDBase solver, int iter, Action<Cell> func)
         {
             Vector2Int gridSizeInCells = solver.GetGridSizeInCells();
 
@@ -169,15 +185,12 @@ namespace GPUVerb
             {
                 for (int y = 0; y < gridSizeInCells.y; ++y)
                 {
-                    int z = 0;
-                    foreach (Cell c in solver.GetResponse(new Vector2Int(x, y)))
+                    for (int z = 0; z < solver.GetResponseLength(); ++z)
                     {
                         if (iter == z || iter == -1)
                         {
-                            func(c);
+                            func(res[x, y, z]);
                         }
-
-                        ++z;
                     }
                 }
             }
@@ -187,7 +200,7 @@ namespace GPUVerb
         {
             // checks the similarity of two grids
             // and return the time step when two grids have the most difference
-            bool Check(Cell[,,] arr1, Cell[,,] arr2, float tolerance, out int idx)
+            bool Check(Cell[,,] arr1, Cell[,,] arr2, float tolerance, out int idx, out int cnt)
             {
                 int mostMismatchIdx = -1;
                 int maxMismatch = 0;
@@ -215,7 +228,7 @@ namespace GPUVerb
                     }
                 }
 
-
+                cnt = maxMismatch;
                 idx = mostMismatchIdx;
                 if (mostMismatchIdx != -1)
                 {
@@ -225,8 +238,8 @@ namespace GPUVerb
             }
 
             Vector2 gridSize = new Vector2(5, 5);
-            FDTDBase correct = new FDTDRef(gridSize, PlaneverbResolution.LowResolution);
-            FDTDBase fdtd = new FDTD(gridSize, PlaneverbResolution.LowResolution);
+            using FDTDBase correct = new FDTDGPU(gridSize, PlaneverbResolution.LowResolution);
+            using FDTDBase fdtd = new FDTDGPU2(gridSize, PlaneverbResolution.LowResolution);
 
             Vector2Int gridSizeInCells = correct.GetGridSizeInCells();
             int numSamples = correct.GetResponseLength();
@@ -239,37 +252,34 @@ namespace GPUVerb
 
             correct.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
             fdtd.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
-
+            Debug.Assert(correct.ProcessGeometryUpdates());
+            Debug.Assert(fdtd.ProcessGeometryUpdates());
 
             void GetResponse(Cell[,,] input1, Cell[,,] input2)
             {
-                correct.GenerateResponse(Vector3.zero);
-                fdtd.GenerateResponse(Vector3.zero);
+                correct.GenerateResponse(Vector3.one);
+                fdtd.GenerateResponse(Vector3.one);
+
+                IFDTDResult resCorrect = correct.GetGrid();
+                IFDTDResult res = fdtd.GetGrid();
 
                 for (int x = 0; x < gridSizeInCells.x; ++x)
                 {
                     for (int y = 0; y < gridSizeInCells.y; ++y)
                     {
-                        int z = 0;
-                        foreach (Cell c in correct.GetResponse(new Vector2Int(x, y)))
+                        for (int z = 0; z < correct.GetResponseLength(); ++z)
                         {
-                            input1[x, y, z] = c;
-                            ++z;
-                        }
-                        z = 0;
-                        foreach (Cell c in fdtd.GetResponse(new Vector2Int(x, y)))
-                        {
-                            input2[x, y, z] = c;
-                            ++z;
+                            input1[x, y, z] = resCorrect[x, y, z];
+                            input2[x, y, z] = res[x, y, z];
                         }
                     }
                 }
             }
 
             GetResponse(c1, c2);
-            if (!Check(c1, c2, 0.1f, out int iter))
+            if (!Check(c1, c2, 0.1f, out int iter, out int cnt))
             {
-                Debug.Log("Mismatch:");
+                Debug.Log($"Mismatch at time {iter}, cnt = {cnt}:");
 
                 StringBuilder sb1 = new StringBuilder();
                 StringBuilder sb2 = new StringBuilder();
@@ -295,11 +305,11 @@ namespace GPUVerb
 
                 if(i > 0)
                 {
-                    if(!Check(c1, last1, 0.0001f, out int _))
+                    if(!Check(c1, last1, 0.0001f, out int _, out int _))
                     {
                         Debug.Log("Data inconsistency detected in Planverb FDTD");   
                     }
-                    if(!Check(c2, last2, 0.0001f, out int _))
+                    if(!Check(c2, last2, 0.0001f, out int _, out int _))
                     {
                         Debug.Log("Data inconsistency detected in GPU FDTD");
                     }
@@ -308,9 +318,6 @@ namespace GPUVerb
                 Array.Copy(c1, last1, linearSize);
                 Array.Copy(c2, last2, linearSize);
             }
-
-            correct.Dispose();
-            fdtd.Dispose();
         }
     }
 }

@@ -7,8 +7,7 @@ using UnityEngine.Rendering;
 
 namespace GPUVerb
 {
-    // TODO: our implementaiton of FDTD using compute shader
-    public class FDTD : FDTDBase
+    public class FDTDGPU : FDTDBase
     {
         public class Result : IFDTDResult
         {
@@ -57,7 +56,7 @@ namespace GPUVerb
         const string k_updateDimShaderParam = "updateDim";
         const string k_absorptionShaderParam = "updateAbsorption";
 
-        const string k_shaderPath = "Shaders/FDTD";
+        const string k_shaderPath = "Shaders/FDTD2";
         const string k_ZeroKernelName = "KernZero";
         const string k_FDTDKernelName = "KernFDTD";
         const string k_AddGeomKernelName = "KernAddBounds";
@@ -80,7 +79,7 @@ namespace GPUVerb
 
         Result m_curResult;
 
-        public FDTD(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
+        public FDTDGPU(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
             m_shader = Resources.Load<ComputeShader>(k_shaderPath);
             m_FDTDKernel = m_shader.FindKernel(k_FDTDKernelName);

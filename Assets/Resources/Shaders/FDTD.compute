@@ -4,6 +4,8 @@
 #pragma kernel KernTest
 #pragma kernel KernAddBounds
 #pragma kernel KernRemoveBounds
+
+
 struct Cell {
 	float pressure;
 	float velX;
@@ -17,8 +19,6 @@ struct BoundaryInfo {
 // used by FDTD
 RWStructuredBuffer<BoundaryInfo> boundaries;
 RWStructuredBuffer<Cell>       grid;
-RWStructuredBuffer<Cell>       gridOut;
-StructuredBuffer<Cell>         gridIn;
 StructuredBuffer<float>        gaussianPulse;
 float2                         listenerPos;
 int3                           gridDim; // (x dim, y dim, time dim)
@@ -29,62 +29,68 @@ float                          courant;
 int4 updateDim;
 float updateAbsorption;
 
-#define IDX(i,j,dim) ((i) * dim[0] + (j))
-#define VALID(i,j,dim) ((i) < dim[1] && (j) < dim[0])
+#define IDX(i,j) ((i) * gridDim[0] + (j))
+#define IDX3(i, j, t) ((j) * gridDim[1] * gridDim[2] + (i) * gridDim[2] + (t))
 
-int GetB_Out(int i, int j) {
-	return gridOut[IDX(i, j, gridDim)].b & 0xffff;
-}
-int GetBy_Out(int i, int j) {
-	return gridOut[IDX(i, j, gridDim)].b >> 16 & 0xffff;
-}
-int GetB_In(int i, int j) {
-	return gridIn[IDX(i, j, gridDim)].b & 0xffff;
-}
-int GetBy_In(int i, int j) {
-	return gridIn[IDX(i, j, gridDim)].b >> 16 & 0xffff;
-}
+#define VALID(i,j) ((i) < gridDim[1] && (j) < gridDim[0])
 
-void WriteB(int val, int i, int j) {
-	gridOut[IDX(i, j, gridDim)].b &= 0xffff0000; // little endian, so it's not 0x0000ffff
-	gridOut[IDX(i, j, gridDim)].b |= val & 0xffff;
+int GetB(int i) {
+	return grid[i].b & 0xffff;
 }
-void WriteBy(int val, int i, int j) {
-	gridOut[IDX(i, j, gridDim)].b &= 0x0000ffff;
-	gridOut[IDX(i, j, gridDim)].b |= (val & 0xffff) << 16;
+int GetBy(int i) {
+	return grid[i].b >> 16 & 0xffff;
+}
+void WriteB(int val, int i) {
+	grid[i].b &= 0xffff0000; // little endian, so it's not 0x0000ffff
+	grid[i].b |= val & 0xffff;
+}
+void WriteBy(int val, int i) {
+	grid[i].b &= 0x0000ffff;
+	grid[i].b |= (val & 0xffff) << 16;
 }
 
 [numthreads(8, 8, 1)]
 void KernTest(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
 	const int j = id.x;
-
-	if (!VALID(i, j, gridDim)) {
+	if (!VALID(i, j)) {
 		return;
 	}
-	WriteB(GetB_In(i, j) + (i + 1) * (j + 1), i, j);
+
+	if (curTime == 0) {
+		Cell c;
+		c.pressure = 0;
+		c.velX = 0;
+		c.velY = 0;
+		c.b = 0;
+		grid[IDX3(i, j, 0)] = c;
+	} else {
+		grid[IDX3(i, j, curTime)] = grid[IDX3(i, j, curTime - 1)];
+		WriteB(GetB(IDX3(i, j, curTime)) + (i + 1) * (j + 1), IDX3(i, j, curTime));
+	}
 }
 
-// required binding: gridDim, gridOut
+// required binding: gridDim, grid
 [numthreads(8, 8, 1)]
 void KernZero(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
 	const int j = id.x;
 
-	if (!VALID(i,j,gridDim)) {
+	if (!VALID(i, j)) {
 		return;
 	}
 
+	Cell c = grid[IDX3(i, j, 0)];
 	// the b fields are not zeroed.
 	// and are set by the add/removeBounds functions
-	gridOut[IDX(i,j,gridDim)].pressure = 0;
-	gridOut[IDX(i,j,gridDim)].velX     = 0;
-	gridOut[IDX(i,j,gridDim)].velY     = 0;
+	c.pressure = 0;
+	c.velX = 0;
+	c.velY = 0;
+	grid[IDX3(i, j, 0)] = c;
 }
 
-
 // required binding:
-// updateDim, gridDim, gridOut, boundaries
+// gridDim, updateDim, grid, boundaries
 [numthreads(8, 8, 1)]
 void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
@@ -96,22 +102,23 @@ void KernRemoveBounds(uint3 id : SV_DispatchThreadID) {
 	const int gi = i + updateDim[1];
 	const int gj = j + updateDim[0];
 
-	boundaries[IDX(gi, gj, gridDim)].absorption = 0;
+	boundaries[IDX(gi, gj)].absorption = 0;
 
-	if(gi == gridDim[1] - 1 || gj == gridDim[0] - 1) {
-		WriteB(0, gi, gj);
-		WriteBy(0, gi, gj);
-	} else if(gi == 0) {
-		WriteB(1, gi, gj);
-		WriteBy(0, gi, gj);
+	const int idx = IDX3(gi, gj, 0);
+	if (gi == gridDim[1] - 1 || gj == gridDim[0] - 1) {
+		WriteB(0, idx);
+		WriteBy(0, idx);
+	} else if (gi == 0) {
+		WriteB(1, idx);
+		WriteBy(0, idx);
 	} else {
-		WriteB(1, gi, gj);
-		WriteBy(1, gi, gj);
+		WriteB(1, idx);
+		WriteBy(1, idx);
 	}
 }
 
 // required binding:
-// updateDim, updateAbsorption, gridDim, gridOut, boundaries
+// gridDim, updateDim, updateAbsorption, grid, boundaries
 [numthreads(8, 8, 1)]
 void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	const int i = id.y;
@@ -121,22 +128,23 @@ void KernAddBounds(uint3 id : SV_DispatchThreadID) {
 	}
 	const int gi = i + updateDim[1];
 	const int gj = j + updateDim[0];
-	boundaries[IDX(gi, gj, gridDim)].absorption = updateAbsorption;
+	boundaries[IDX(gi, gj)].absorption = updateAbsorption;
 
-	WriteB(0, gi, gj);
-	WriteBy(0, gi, gj);
+	const int idx = IDX3(gi, gj, 0);
+	WriteB(0, idx);
+	WriteBy(0, idx);
 }
 
 
-float CalculateVel(const int ni, const int nj, const int i, const int j, const float curVel) {
-	const Cell c = gridOut[IDX(i, j, gridDim)];
-	const Cell neighbor = gridOut[IDX(ni, nj, gridDim)];
+float CalculateVel(const int ni, const int nj, const int i, const int j, const int t, const float curVel) {
+	const Cell c = grid[IDX3(i, j, t)];
+	const Cell neighbor = grid[IDX3(ni, nj, t)];
 
-	const float betaN = GetB_Out(ni, nj);
-	const float rn = boundaries[IDX(ni, nj, gridDim)].absorption;
+	const float betaN = GetB(IDX3(ni, nj, t));
+	const float rn = boundaries[IDX(ni, nj)].absorption;
 	const float yn = (1.f - rn) / (1.f + rn);
-	const float beta = GetB_Out(i, j);
-	const float r = boundaries[IDX(i, j, gridDim)].absorption;
+	const float beta = GetB(IDX3(i, j, t));
+	const float r = boundaries[IDX(i, j)].absorption;
 	const float y = (1.f - r) / (1.f + r);
 
 	const float gradient = c.pressure - neighbor.pressure;
@@ -149,7 +157,7 @@ float CalculateVel(const int ni, const int nj, const int i, const int j, const f
 
 // A single iteration of FDTD solver
 // required binding: 
-//     gridDim, curTime, grid, gridIn, gridOut, boundaries, courant, listenerPos, gaussianPulse
+//     gridDim, curTime, grid, boundaries, courant, listenerPos, gaussianPulse
 // reads from gridIn and writes to gridOut
 [numthreads(8, 8, 1)]
 void KernFDTD(
@@ -160,66 +168,71 @@ void KernFDTD(
 {
 	const int i = id.y;
 	const int j = id.x;
+	const int t = curTime;
 
-	if (!VALID(i, j, gridDim)) {
+	if (!VALID(i, j)) {
 		return;
 	}
 
-	const Cell c = gridIn[IDX(i, j, gridDim)];
-
+	Cell prevCell = grid[IDX3(i, j, t - 1)];
 	// copy from previous time step
-	gridOut[IDX(i, j, gridDim)] = c;
+	grid[IDX3(i, j, t)].b = prevCell.b;
+	grid[IDX3(i, j, t)].velX = prevCell.velX;
+	grid[IDX3(i, j, t)].velY = prevCell.velY;
 
-	// pressure
-	float divergence = 0;
-	if (VALID(i + 1, j, gridDim) && VALID(i, j + 1, gridDim)) {
-		const Cell cy = gridIn[IDX(i + 1, j, gridDim)];
-		const Cell cx = gridIn[IDX(i, j + 1, gridDim)];
-		divergence = (cx.velX - c.velX) + (cy.velY - c.velY);
-	} else if (VALID(i + 1, j, gridDim)) {
-		const Cell cy = gridIn[IDX(i + 1, j, gridDim)];
-		divergence = -c.velX + (cy.velY - c.velY);
-	} else if (VALID(i, j + 1, gridDim)) {
-		const Cell cx = gridIn[IDX(i, j + 1, gridDim)];
-		divergence = (cx.velX - c.velX) - c.velY;
-	} else {
-		divergence = 0;
+	if (i == listenerPos[1] && j == listenerPos[0]) {
+		prevCell.pressure += gaussianPulse[t - 1];
 	}
 
-	gridOut[IDX(i, j, gridDim)].pressure = GetB_In(i, j) * (c.pressure - courant * divergence);
-	AllMemoryBarrier();
+	// pressure
+	{
+		float divergence = 0;
+		if (VALID(i + 1, j) && VALID(i, j + 1)) {
+			const Cell cy = grid[IDX3(i + 1, j, t - 1)];
+			const Cell cx = grid[IDX3(i, j + 1, t - 1)];
+			divergence = (cx.velX - prevCell.velX) + (cy.velY - prevCell.velY);
+		} else if (VALID(i + 1, j)) {
+			const Cell cy = grid[IDX3(i + 1, j, t - 1)];
+			divergence = -prevCell.velX + (cy.velY - prevCell.velY);
+		} else if (VALID(i, j + 1)) {
+			const Cell cx = grid[IDX3(i, j + 1, t - 1)];
+			divergence = (cx.velX - prevCell.velX) - prevCell.velY;
+		}
+
+		grid[IDX3(i, j, t)].pressure = GetB(IDX3(i, j, t - 1)) * (prevCell.pressure - courant * divergence);
+
+		AllMemoryBarrier();
+	}
+
+	Cell myCell = grid[IDX3(i, j, t)];
 
 	// velocity x
-	if (VALID(i, j - 1, gridDim)) {
-		gridOut[IDX(i, j, gridDim)].velX = CalculateVel(i, j - 1, i, j, gridOut[IDX(i, j, gridDim)].velX);
-	} else {
-		gridOut[IDX(i, j, gridDim)].velX = gridIn[IDX(i, j, gridDim)].velX;
+	if (j > 0 && j < gridDim[0] - 1) {
+		myCell.velX = CalculateVel(i, j - 1, i, j, t, myCell.velX);
+	}
+
+
+	if (j == 0) {
+		// top
+		myCell.velX = -myCell.pressure;
+	} else if (j == gridDim[0] - 1) {
+		// bottom
+		myCell.velX = grid[IDX3(i, j - 1, t)].pressure;
 	}
 
 	// velocity Y
-	if (VALID(i - 1, j, gridDim)) {
-		gridOut[IDX(i, j, gridDim)].velY = CalculateVel(i - 1, j, i, j, gridOut[IDX(i, j, gridDim)].velY);
-	} else {
-		gridOut[IDX(i, j, gridDim)].velY = gridIn[IDX(i, j, gridDim)].velY;
+	if (i > 0 && i < gridDim[1] - 1) {
+		myCell.velY = CalculateVel(i - 1, j, i, j, t, myCell.velY);
 	}
 
-	// top and bottom absorption
-	if(j == 0) {
-		gridOut[IDX(i, 0, gridDim)].velX = -gridOut[IDX(i, 0, gridDim)].pressure;
-		gridOut[IDX(i, gridDim[0] - 1, gridDim)].velX = gridOut[IDX(i, gridDim[0] - 2, gridDim)].pressure;
-	}
-
-	// left and right absorption
-	if(i == 0) {
-		gridOut[IDX(0, j, gridDim)].velY = -gridOut[IDX(0, j, gridDim)].pressure;
-		gridOut[IDX(gridDim[1] - 1, j, gridDim)].velY = gridOut[IDX(gridDim[1] - 2, j, gridDim)].pressure;
+	if (i == 0) {
+		// left
+		myCell.velY = -myCell.pressure;
+	} else if (i == gridDim[1] - 1) {
+		// right
+		myCell.velY = grid[IDX3(i - 1, j, t)].pressure;
 	}
 
 	// write to grid
-	grid[id.x * gridDim[1] * gridDim[2] + id.y * gridDim[2] + curTime] = gridOut[IDX(i, j, gridDim)];
-
-	if(i == listenerPos[1] && j == listenerPos[0]) {
-		// add pulse
-		gridOut[IDX(i, j, gridDim)].pressure += gaussianPulse[curTime];
-	}
+	grid[IDX3(i, j, t)] = myCell;
 }

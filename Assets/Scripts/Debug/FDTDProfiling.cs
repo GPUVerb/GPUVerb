@@ -52,7 +52,7 @@ namespace GPUVerb
                     {
                         if (!tooslow)
                         {
-                            using (var refClass = new FDTDRef(gridSize, PlaneverbResolution.MidResolution))
+                            using (var refClass = new FDTDCPU(gridSize, PlaneverbResolution.MidResolution))
                             {
                                 // make it run in a thread because CPU version is very inefficient
                                 ThreadWrapper wrapper = new ThreadWrapper(refClass, gridSize / 2);
@@ -74,7 +74,7 @@ namespace GPUVerb
                     }
 
 
-                    using (var fdtd = new FDTD(gridSize, PlaneverbResolution.MidResolution))
+                    using (var fdtd = new FDTDGPU2(gridSize, PlaneverbResolution.MidResolution))
                     {
                         Stopwatch sw = Stopwatch.StartNew();
                         fdtd.GenerateResponse(gridSize / 2);

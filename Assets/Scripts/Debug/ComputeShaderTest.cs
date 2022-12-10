@@ -12,17 +12,17 @@ namespace GPUVerb
     {
         [SerializeField]
         Vector2Int m_gridDim = new Vector2Int(10, 10);
-        Cell[,] m_result = null;
 
-        void PrintGrid()
+        void PrintGrid(Cell[,,] result, int t)
         {
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < m_result.GetLength(0); ++i)
+            for (int i = 0; i < result.GetLength(0); ++i)
             {
-                for (int j = 0; j < m_result.GetLength(1); ++j)
+                for (int j = 0; j < result.GetLength(1); ++j)
                 {
-                    Cell cell = m_result[i, j];
-                    sb.Append(cell);
+                    Cell cell = result[i, j, t];
+                    sb.Append(cell.ToString(true));
+                    sb.Append(' ');
                 }
                 sb.AppendLine();
             }
@@ -36,35 +36,21 @@ namespace GPUVerb
             {
                 var fdtdShader = Resources.Load<ComputeShader>("Shaders/FDTD");
                 int cellKernel = fdtdShader.FindKernel("KernTest");
-                int cellZeroKernel = fdtdShader.FindKernel("KernZero");
 
                 fdtdShader.GetKernelThreadGroupSizes(cellKernel, out uint x, out uint y, out uint _);
                 Debug.Log($"Cell Struct Size = {Marshal.SizeOf(typeof(Cell))}");
 
-                using var inputBuf = new ComputeBuffer(m_gridDim.x * m_gridDim.y, Marshal.SizeOf(typeof(Cell)));
-                using var outputBuf = new ComputeBuffer(m_gridDim.x * m_gridDim.y, Marshal.SizeOf(typeof(Cell)));
+                using var inputBuf = new ComputeBuffer(m_gridDim.x * m_gridDim.y * 3, Marshal.SizeOf(typeof(Cell)));
+                Cell[,,] result = new Cell[m_gridDim.x, m_gridDim.y, 3];
 
-                m_result = new Cell[m_gridDim.x, m_gridDim.y];
-
-                fdtdShader.SetInts("gridDim", new int[] { m_gridDim.x, m_gridDim.y });
-
-                // test buffer ping-pong
-                ComputeBuffer inbuf = inputBuf, outbuf = outputBuf;
-                fdtdShader.SetBuffer(cellZeroKernel, "gridOut", inbuf);
-                fdtdShader.Dispatch(cellZeroKernel, (int)((m_gridDim.x + x - 1) / x), (int)((m_gridDim.y + y - 1) / y), 1);
-                for (int i = 0; i < 2; ++i)
+                fdtdShader.SetInts("gridDim", new int[] { m_gridDim.x, m_gridDim.y, 3 });
+                fdtdShader.SetBuffer(cellKernel, "grid", inputBuf);
+                for (int i = 0; i < 3; ++i)
                 {
-                    fdtdShader.SetBuffer(cellKernel, "gridIn", inbuf);
-                    fdtdShader.SetBuffer(cellKernel, "gridOut", outbuf);
-
+                    fdtdShader.SetInt("curTime", i);
                     fdtdShader.Dispatch(cellKernel, (int)((m_gridDim.x + x - 1) / x), (int)((m_gridDim.y + y - 1) / y), 1);
-
-                    var tmp = inbuf;
-                    inbuf = outbuf;
-                    outbuf = tmp;
-
-                    inbuf.GetData(m_result);
-                    PrintGrid();
+                    inputBuf.GetData(result);
+                    PrintGrid(result, i);
                 }
             }
 

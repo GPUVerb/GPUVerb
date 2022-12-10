@@ -33,6 +33,11 @@ namespace GPUVerb
             return (thisY - halfHeight) <= headY && (thisY + halfHeight) >= headY;
         }
 
+        public PlaneVerbAABB GetBounds()
+        {
+            return new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption));
+        }
+
         // Start is called before the first frame update
         void Start()
         {
@@ -43,7 +48,7 @@ namespace GPUVerb
 
             if(IsWithinPlayerHeadSlice())
             {
-                m_geomID = GPUVerbContext.Instance.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                m_geomID = GPUVerbContext.Instance.AddGeometry(GetBounds());
                 m_lastWinthinHead = true;
             }
             else
@@ -63,11 +68,11 @@ namespace GPUVerb
             {
                 if(m_geomID == FDTDBase.k_invalidGeomID)
                 {
-                    m_geomID = GPUVerbContext.Instance.AddGeometry(new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    m_geomID = GPUVerbContext.Instance.AddGeometry(GetBounds());
                 }
                 else
                 {
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
                 }
             }
             m_lastWinthinHead = withinHead;
@@ -77,12 +82,12 @@ namespace GPUVerb
                 TransformState curState = new TransformState(transform);
                 if (!curState.Equals(m_lastTransformState))
                 {
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
                     m_lastTransformState = curState;
                 }
                 if (m_absorption != m_lastAbsorption)
                 {
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption)));
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
                     m_lastAbsorption = m_absorption;
                 }
             }

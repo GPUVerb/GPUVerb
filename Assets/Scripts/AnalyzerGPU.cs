@@ -112,7 +112,7 @@ namespace GPUVerb
             int planeSize = m_gridSizeInCells.x * m_gridSizeInCells.y;
             int totalSize = planeSize * m_responseLength;
 
-            if(fdtd is FDTD)
+            if(!(fdtd is FDTDCPU))
             {
                 // share buffer with fdtd
                 m_FDTDgridBuffer = null;
@@ -165,10 +165,14 @@ namespace GPUVerb
             Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
 
             //Ecode Response Compute shader calls
-            if(result is FDTD.Result)
+            if(result is FDTDGPU2.Result)
             {
                 // share buffer with fdtd if it's also the GPU version
-                m_FDTDgridBuffer = (result as FDTD.Result).GetComputeBuffer();
+                m_FDTDgridBuffer = (result as FDTDGPU2.Result).GetComputeBuffer();
+            }
+            else if(result is FDTDGPU.Result)
+            {
+                m_FDTDgridBuffer = (result as FDTDGPU.Result).GetComputeBuffer();
             }
             else
             {
@@ -214,7 +218,10 @@ namespace GPUVerb
         }
         public override void Dispose()
         {
-            m_FDTDgridBuffer.Dispose();
+            if (m_FDTDgridBuffer != null)
+            {
+                m_FDTDgridBuffer.Dispose();
+            }
             m_analyzerGridBuffer.Dispose();
             m_delaySamplesBuffer.Dispose();
         }

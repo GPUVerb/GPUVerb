@@ -51,7 +51,7 @@ namespace GPUVerb
             Vector2 gridSize = fdtd.GetGridSize();
             PlaneverbCreateConfig(gridSize.x, gridSize.y, (int)m_resolution);
 
-            if(!(fdtd is FDTDRef))
+            if(!(fdtd is FDTDCPU))
             {
                 Debug.LogError("cannot use Analyzer ref with fdtd GPU");
                 return;
