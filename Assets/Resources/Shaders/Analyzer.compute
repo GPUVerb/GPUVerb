@@ -61,7 +61,7 @@ const int COUNT_NEIGHBOR = 8;
 float GetEFreePerR(int listenerX, int listenerY, int emitterX, int emitterY)
 {
 	float lX = listenerX * cellSize;
-	float lY = listenerX * cellSize;
+	float lY = listenerY * cellSize;
 	float eX = emitterX * cellSize;
 	float eY = emitterY * cellSize;
 
@@ -140,10 +140,9 @@ void KernEncodeResponse(uint3 id : SV_DispatchThreadID) {
 		for (; k < sourceDirEnd; ++k)
 		{
 			float pr = FDTDgrid[IDX3(i, j, k)].pressure;
-			pr = pr * pr;
-			Edry += pr;
-			radiationDir.x += pr;
-			radiationDir.y += pr;
+			Edry += pr * pr;
+			radiationDir.x += pr * FDTDgrid[IDX3(i, j, k)].velX;
+			radiationDir.y += pr * FDTDgrid[IDX3(i, j, k)].velY;
 		}
 		for (; k < directEnd; ++k)
 		{

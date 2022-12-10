@@ -94,7 +94,7 @@ namespace GPUVerb
             foreach (AnalyzerInfo info in m_cubeInfos)
             {
                 AnalyzerResult data = info.cur;
-                float occlusion = data.occlusion;
+                float occlusion = data.sourceDirectivity.x;
                 //Debug.Log(occlusion);
                 float h = m_baseHeight + m_motionScale * occlusion;
                 info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
