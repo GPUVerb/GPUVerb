@@ -4,9 +4,9 @@ GPUVerb
 
 Evan S, Runshi Gu, Tongwei Dai
 
-Built for: Windows 10/11 (x64)
+Built for: Windows 10/11 (x64)  
 Tested on
-- Windows 10, Ryzen 7 4800H @ 2.9 GHz, GTX 3050 (Laptop)
+- Windows 10, Ryzen 7 4800H @ 2.9 GHz, RTX 3050 (Laptop)
 
 ## Background
 Realistic audio is highly expensive to simulate. In real-time environments, like video games, this requires heavy precomputing to accurately represent the real nature of sound. In dynamic environments, precomputation is a logistical impossibility. The paper [Interactive sound propagation for dynamic scenes using 2D wave simulation](https://www.microsoft.com/en-us/research/uploads/prod/2020/08/Planeverb_CameraReady_wFonts.pdf) and its corresponding Unity plugin [Planeverb](https://github.com/themattrosen/Planeverb/tree/master/), addresses this by enabling use of realistic and dynamic acoustics for real-time environments. 
