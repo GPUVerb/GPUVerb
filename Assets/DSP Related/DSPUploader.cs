@@ -10,7 +10,7 @@ namespace GPUVerb {
     //}
 
     [RequireComponent(typeof(AudioSource))]
-	[RequireComponent(typeof(Emitter))]
+	//[RequireComponent(typeof(Emitter))]
 	class DSPUploader : MonoBehaviour
 	{
 		private enum EffectData {
@@ -35,7 +35,7 @@ namespace GPUVerb {
 		};
 
 		AudioSource source;
-		Emitter emitter;
+		//Emitter emitter;
 
 		// public interface
 		public SourceDirectivityPattern sourcePattern;
@@ -48,7 +48,7 @@ namespace GPUVerb {
 		void Start()
 		{
 			source = GetComponent<AudioSource>();
-			emitter = GetComponent<Emitter>();
+			//emitter = GetComponent<Emitter>();
 
 			if (!source.spatialize)
 			{
@@ -58,21 +58,25 @@ namespace GPUVerb {
 
 		void Update()
 		{
-			AnalyzerResult data = emitter.AcousticData;
-
-			source.SetSpatializerFloat((int)EffectData.SPATIALIZE, Convert.ToSingle(SPATIALIZE));
-			source.SetSpatializerFloat((int)EffectData.MUTE_DRY, Convert.ToSingle(SUPPRESS_DRY_SOUND));
-			source.SetSpatializerFloat((int)EffectData.SMOOTHING_FACTOR, SMOOTHING);
-			source.SetSpatializerFloat((int)EffectData.WET_GAIN_RATIO, WET_GAIN_RATIO);
-			source.SetSpatializerFloat((int)EffectData.sourcePattern, (float)sourcePattern);
-			source.SetSpatializerFloat((int)EffectData.dryGain, data.occlusion);
-			source.SetSpatializerFloat((int)EffectData.wetGain, data.wetGain);
-			source.SetSpatializerFloat((int)EffectData.rt60, data.rt60);
-			source.SetSpatializerFloat((int)EffectData.lowPass, data.lowpassIntensity);
-			source.SetSpatializerFloat((int)EffectData.direcX, data.direction.x);
-			source.SetSpatializerFloat((int)EffectData.direcY, data.direction.y);
-			source.SetSpatializerFloat((int)EffectData.sDirectivityX, data.sourceDirectivity.x);
-			source.SetSpatializerFloat((int)EffectData.sDirectivityY, data.sourceDirectivity.y);
+			Vector2Int pos = GPUVerbContext.Instance.ToGridPos(new Vector2(transform.position.x, transform.position.z));
+			AnalyzerResult? dataNullable = GPUVerbContext.Instance.GetOutput(pos);
+			if (dataNullable != null)
+			{
+				AnalyzerResult data = dataNullable.Value;
+				source.SetSpatializerFloat((int)EffectData.SPATIALIZE, Convert.ToSingle(SPATIALIZE));
+				source.SetSpatializerFloat((int)EffectData.MUTE_DRY, Convert.ToSingle(SUPPRESS_DRY_SOUND));
+				source.SetSpatializerFloat((int)EffectData.SMOOTHING_FACTOR, SMOOTHING);
+				source.SetSpatializerFloat((int)EffectData.WET_GAIN_RATIO, WET_GAIN_RATIO);
+				source.SetSpatializerFloat((int)EffectData.sourcePattern, (float)sourcePattern);
+				source.SetSpatializerFloat((int)EffectData.dryGain, data.occlusion);
+				source.SetSpatializerFloat((int)EffectData.wetGain, data.wetGain);
+				source.SetSpatializerFloat((int)EffectData.rt60, data.rt60);
+				source.SetSpatializerFloat((int)EffectData.lowPass, data.lowpassIntensity);
+				source.SetSpatializerFloat((int)EffectData.direcX, data.direction.x);
+				source.SetSpatializerFloat((int)EffectData.direcY, data.direction.y);
+				source.SetSpatializerFloat((int)EffectData.sDirectivityX, data.sourceDirectivity.x);
+				source.SetSpatializerFloat((int)EffectData.sDirectivityY, data.sourceDirectivity.y);
+			}
 		}
 	}
 }

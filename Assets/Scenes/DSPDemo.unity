@@ -190,7 +190,8 @@ PrefabInstance:
       propertyPath: m_volume
       value: 7.1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5978401970390147407, guid: ef9c5e2ffc6109e448a80e8cee90a694, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: ef9c5e2ffc6109e448a80e8cee90a694, type: 3}
 --- !u!114 &13888245
 MonoBehaviour:
