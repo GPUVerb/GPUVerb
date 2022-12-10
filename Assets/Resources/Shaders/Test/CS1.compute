@@ -1,12 +1,29 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
+#pragma kernel bigKernel
+#pragma kernel smallKernel
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWStructuredBuffer<int> res;
+int iter;
 
 [numthreads(8,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
 	++ res[id.x];
+}
+
+[numthreads(1,1,1)]
+void bigKernel(uint3 id : SV_DispatchThreadID) {
+	res[0] = 0;
+	for(int i=1; i<8; ++i) {
+		res[i] = res[i-1] + 1;
+	}
+}
+
+[numthreads(1,1,1)]
+void smallKernel(uint3 id : SV_DispatchThreadID) {
+	if (!iter) res[iter] = 0;
+	else res[iter] = res[iter-1] + 1;
 }

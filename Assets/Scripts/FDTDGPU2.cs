@@ -72,7 +72,6 @@ namespace GPUVerb
         int m_removeGeomKernel = -1;
 
         Vector2Int m_threadGroupDim = Vector2Int.zero;
-        float[] m_gaussianPulse;
 
         Result m_curResult;
 
@@ -94,26 +93,35 @@ namespace GPUVerb
             m_boundaryBuffer = new ComputeBuffer(planeSize, Marshal.SizeOf(typeof(BoundaryInfo)));
             m_gaussianBuffer = new ComputeBuffer(m_responseLength, sizeof(float));
             m_gridBuf = new ComputeBuffer(totalSize, Marshal.SizeOf(typeof(Cell)));
-
-            m_gaussianPulse = new float[m_responseLength];
-            float sigma = 1.0f / (0.5f * Mathf.PI * (float)res);
-            float delay = 2 * sigma;
-            float dt = 1.0f / m_samplingRate;
-            for (int i = 0; i < m_responseLength; ++i)
             {
-                float t = i * dt;
-                m_gaussianPulse[i] = Mathf.Exp(-(t - delay) * (t - delay) / (sigma * sigma));
+                float[] data = new float[m_responseLength];
+                float sigma = 1.0f / (0.5f * Mathf.PI * (float)res);
+                float delay = 2 * sigma;
+                float dt = 1.0f / m_samplingRate;
+                for (int i = 0; i < m_responseLength; ++i)
+                {
+                    float t = i * dt;
+                    data[i] = Mathf.Exp(-(t - delay) * (t - delay) / (sigma * sigma));
+                }
+                m_gaussianBuffer.SetData(data);
+
             }
-
-            m_gaussianBuffer.SetData(m_gaussianPulse);
-
-            // TODO: any better way to do this?
-            Cell[] data = new Cell[planeSize];
-            for(int i = 0; i < planeSize; ++i)
             {
-                data[i].b = data[i].by = 1;
+                Cell[] data = new Cell[planeSize];
+                for (int i = 0; i < planeSize; ++i)
+                {
+                    data[i].b = data[i].by = 1;
+                }
+                m_gridBuf.SetData(data, 0, 0, planeSize);
             }
-            m_gridBuf.SetData(data, 0, 0, planeSize);
+            {
+                BoundaryInfo[] data = new BoundaryInfo[planeSize];
+                for (int i = 0; i < planeSize; ++i)
+                {
+                    data[i].absorption = AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.FreeSpace);
+                }
+                m_boundaryBuffer.SetData(data);
+            }
 
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y, m_responseLength });
         }

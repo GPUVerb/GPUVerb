@@ -55,7 +55,7 @@ namespace GPUVerb
                 for (float y = minCorner.y; y <= maxCorner.y; y += m_cubeSize)
                 {
                     GameObject obj;
-                    if(m_cubePrefab == null)
+                    if (m_cubePrefab == null)
                     {
                         obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
                         Destroy(obj.GetComponent<Collider>());
@@ -77,6 +77,70 @@ namespace GPUVerb
                 }
             }
         }
+
+        // checks the similarity of two grids
+        // and return the time step when two grids have the most difference
+        bool Check(FDTDBase f1, FDTDBase f2, Vector3 listener, float tolerance)
+        {
+            Vector2Int gridSizeInCells = f1.GetGridSizeInCells();
+            int numSamples = f1.GetResponseLength();
+            f1.GenerateResponse(listener);
+            f2.GenerateResponse(listener);
+
+            IFDTDResult res1 = f1.GetGrid();
+            IFDTDResult res2 = f2.GetGrid();
+
+            int mostMismatchIdx = -1;
+            int maxMismatch = 0;
+            int totalMismatch = 0;
+
+            for (int k = 0; k < numSamples; ++k)
+            {
+                int curMismatch = 0;
+
+                for (int i = 0; i < gridSizeInCells.x; ++i)
+                {
+                    for (int j = 0; j < gridSizeInCells.y; ++j)
+                    {
+                        if (!res1[i, j, k].Equals(res2[i, j, k], tolerance))
+                        {
+                            ++curMismatch;
+                            ++totalMismatch;
+                        }
+                    }
+                }
+
+                if (curMismatch > maxMismatch)
+                {
+                    maxMismatch = curMismatch;
+                    mostMismatchIdx = k;
+                }
+            }
+            if (mostMismatchIdx != -1)
+            {
+                Debug.Log($"Max Mismatch at time = {mostMismatchIdx}, cnt = {maxMismatch}, total = {totalMismatch}, " +
+                    $"difference = {100.0 * totalMismatch / (gridSizeInCells.x * gridSizeInCells.y * numSamples)}%:");
+                Debug.Log("==== content dump at max mismatch time ====");
+                StringBuilder sb1 = new StringBuilder();
+                StringBuilder sb2 = new StringBuilder();
+                for (int x = 0; x < gridSizeInCells.x; ++x)
+                {
+                    for (int y = 0; y < gridSizeInCells.y; ++y)
+                    {
+                        sb1.Append(res1[x, y, mostMismatchIdx].ToString(true)); sb1.Append(", ");
+                        sb2.Append(res2[x, y, mostMismatchIdx].ToString(true)); sb2.Append(", ");
+                    }
+                    sb1.AppendLine(); sb2.AppendLine();
+                }
+                Debug.Log(sb1.ToString());
+                Debug.Log(sb2.ToString());
+                Debug.Log("========================================");
+
+                return totalMismatch <= 50;
+            }
+            return true;
+        }
+
 
         IFDTDResult GetData(FDTDBase solver)
         {
@@ -109,18 +173,31 @@ namespace GPUVerb
             m_simFinished = false;
             
             Vector2 gridSize = GPUVerbContext.Instance.MaxCorner;
+
+            using FDTDBase correct = new FDTDGPU(gridSize, GPUVerbContext.Instance.SimulationRes);
             using FDTDBase solver = new FDTDGPU2(gridSize, GPUVerbContext.Instance.SimulationRes);
-            Debug.Log($"Simulate using {solver.GetType().Name}");
+            Debug.Log($"Simulate using {solver.GetType().Name} and check agains {correct.GetType().Name}");
+
+
             var gameObjs = SceneManager.GetActiveScene().GetRootGameObjects();
             foreach(var go in gameObjs)
             {
                 var geoms = go.GetComponentsInChildren<FDTDGeometry>();
                 foreach(var geom in geoms)
                 {
+                    correct.AddGeometry(geom.GetBounds());
                     solver.AddGeometry(geom.GetBounds());
                 }
             }
+            correct.ProcessGeometryUpdates();
             solver.ProcessGeometryUpdates();
+
+            if(!Check(correct, solver, Listener.Position, 0.1f))
+            {
+                m_simFinished = true;
+                yield break;
+            }
+
             IFDTDResult res = GetData(solver);
 
             int numSamples = solver.GetResponseLength();
@@ -196,50 +273,29 @@ namespace GPUVerb
             }
         }
 
+        void PrintGrid(FDTDBase fdtd, int time)
+        {
+            StringBuilder sb = new StringBuilder();
+            var grid = fdtd.GetGrid();
+            Vector2Int gridSizeInCells = fdtd.GetGridSizeInCells();
+
+            for (int i = 0; i < gridSizeInCells.x; ++i)
+            {
+                for (int j = 0; j < gridSizeInCells.y; ++j)
+                {
+                    sb.Append(grid[i, j, time].ToString(true));
+                    sb.Append(' ');
+                }
+                sb.AppendLine();
+            }
+            Debug.Log(sb.ToString());
+        }
+
         private void FDTDUnitTest()
         {
-            // checks the similarity of two grids
-            // and return the time step when two grids have the most difference
-            bool Check(Cell[,,] arr1, Cell[,,] arr2, float tolerance, out int idx, out int cnt)
-            {
-                int mostMismatchIdx = -1;
-                int maxMismatch = 0;
-
-
-                for (int k = 0; k < arr1.GetLength(2); ++k)
-                {
-                    int curMismatch = 0;
-
-                    for (int i = 0; i < arr1.GetLength(0); ++i)
-                    {
-                        for (int j = 0; j < arr1.GetLength(1); ++j)
-                        {
-                            if (!arr1[i, j, k].Equals(arr2[i, j, k], tolerance))
-                            {
-                                ++curMismatch;
-                            }
-                        }
-                    }
-
-                    if (curMismatch > maxMismatch)
-                    {
-                        maxMismatch = curMismatch;
-                        mostMismatchIdx = k;
-                    }
-                }
-
-                cnt = maxMismatch;
-                idx = mostMismatchIdx;
-                if (mostMismatchIdx != -1)
-                {
-                    return false;
-                }
-                return true;
-            }
-
             Debug.Log("Begin FDTD unit test");
 
-            Vector2 gridSize = new Vector2(5, 5);
+            Vector2 gridSize = new Vector2(10, 10);
             using FDTDBase correct = new FDTDGPU(gridSize, PlaneverbResolution.LowResolution);
             using FDTDBase fdtd = new FDTDGPU2(gridSize, PlaneverbResolution.LowResolution);
 
@@ -249,77 +305,14 @@ namespace GPUVerb
             Debug.Assert(gridSizeInCells == fdtd.GetGridSizeInCells());
             Debug.Assert(numSamples == fdtd.GetResponseLength());
 
-            Cell[,,] c1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-            Cell[,,] c2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-
             correct.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
             fdtd.AddGeometry(new PlaneVerbAABB(new Vector2(2.5f, 2.5f), 1, 1, AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Default)));
             Debug.Assert(correct.ProcessGeometryUpdates());
             Debug.Assert(fdtd.ProcessGeometryUpdates());
 
-            void GetResponse(Cell[,,] input1, Cell[,,] input2)
-            {
-                correct.GenerateResponse(Vector3.one);
-                fdtd.GenerateResponse(Vector3.one);
-
-                IFDTDResult resCorrect = correct.GetGrid();
-                IFDTDResult res = fdtd.GetGrid();
-
-                for (int x = 0; x < gridSizeInCells.x; ++x)
-                {
-                    for (int y = 0; y < gridSizeInCells.y; ++y)
-                    {
-                        for (int z = 0; z < correct.GetResponseLength(); ++z)
-                        {
-                            input1[x, y, z] = resCorrect[x, y, z];
-                            input2[x, y, z] = res[x, y, z];
-                        }
-                    }
-                }
-            }
-
-            GetResponse(c1, c2);
-            if (!Check(c1, c2, 0.1f, out int iter, out int cnt))
-            {
-                Debug.Log($"Mismatch at time {iter}, cnt = {cnt}:");
-
-                StringBuilder sb1 = new StringBuilder();
-                StringBuilder sb2 = new StringBuilder();
-                for (int x = 0; x < gridSizeInCells.x; ++x)
-                {
-                    for (int y = 0; y < gridSizeInCells.y; ++y)
-                    {
-                        sb1.Append(c1[x, y, iter].ToString(true)); sb1.Append(", ");
-                        sb2.Append(c2[x, y, iter].ToString(true)); sb2.Append(", ");
-                    }
-                    sb1.AppendLine(); sb2.AppendLine();
-                }
-                Debug.Log(sb1.ToString());
-                Debug.Log(sb2.ToString());
-            }
-
-            Cell[,,] last1 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-            Cell[,,] last2 = new Cell[gridSizeInCells.x, gridSizeInCells.y, numSamples];
-            int linearSize = gridSizeInCells.x * gridSizeInCells.y * numSamples;
-            for (int i=0; i<10; ++i)
-            {
-                GetResponse(c1, c2);
-
-                if(i > 0)
-                {
-                    if(!Check(c1, last1, 0.0001f, out int _, out int _))
-                    {
-                        Debug.Log("Data inconsistency detected in Planverb FDTD");   
-                    }
-                    if(!Check(c2, last2, 0.0001f, out int _, out int _))
-                    {
-                        Debug.Log("Data inconsistency detected in GPU FDTD");
-                    }
-                }
-
-                Array.Copy(c1, last1, linearSize);
-                Array.Copy(c2, last2, linearSize);
-            }
+            Check(correct, fdtd, Vector3.one, 0.1f);
+            PrintGrid(correct, 20);
+            PrintGrid(fdtd, 20);
 
             Debug.Log("end FDTD unit test");
         }

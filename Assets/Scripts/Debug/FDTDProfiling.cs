@@ -46,16 +46,16 @@ namespace GPUVerb
                     gridSize.x <= m_gridMaxCorner.x;
                     gridSize += Vector2.one)
                 {
-                    double timeCPU = -1, timeGPU;
+                    double timeCPU = -1, timeGPU, timeGPU2;
 
                     if(cpu)
                     {
                         if (!tooslow)
                         {
-                            using (var refClass = new FDTDCPU(gridSize, PlaneverbResolution.MidResolution))
+                            using (var fdtd = new FDTDCPU(gridSize, PlaneverbResolution.MidResolution))
                             {
                                 // make it run in a thread because CPU version is very inefficient
-                                ThreadWrapper wrapper = new ThreadWrapper(refClass, gridSize / 2);
+                                ThreadWrapper wrapper = new ThreadWrapper(fdtd, gridSize / 2);
                                 Thread thread = new Thread(new ThreadStart(wrapper.Execute));
                                 thread.Start();
                                 thread.Join(new System.TimeSpan(0, 1, 0));
@@ -73,22 +73,36 @@ namespace GPUVerb
                         }
                     }
 
+                    using (var fdtd = new FDTDGPU(gridSize, PlaneverbResolution.MidResolution))
+                    {
+                        Stopwatch sw = Stopwatch.StartNew();
+                        fdtd.GenerateResponse(gridSize / 2);
 
+                        // force sync to cpu
+                        var _ = fdtd.GetGrid()[0, 0, 0];
+
+                        sw.Stop();
+                        timeGPU = sw.Elapsed.TotalMilliseconds;
+                    }
                     using (var fdtd = new FDTDGPU2(gridSize, PlaneverbResolution.MidResolution))
                     {
                         Stopwatch sw = Stopwatch.StartNew();
                         fdtd.GenerateResponse(gridSize / 2);
+
+                        // force sync to cpu
+                        var _ = fdtd.GetGrid()[0, 0, 0];
+
                         sw.Stop();
-                        timeGPU = sw.Elapsed.TotalMilliseconds;
+                        timeGPU2 = sw.Elapsed.TotalMilliseconds;
                     }
 
                     if(cpu)
                     {
-                        writer.WriteLine($"{gridSize.x}x{gridSize.y},{timeCPU},{timeGPU}");
+                        writer.WriteLine($"{gridSize.x}x{gridSize.y},{timeCPU},{timeGPU},{timeGPU2}");
                     }
                     else
                     {
-                        writer.WriteLine($"{gridSize.x}x{gridSize.y},{timeGPU}");
+                        writer.WriteLine($"{gridSize.x}x{gridSize.y},{timeGPU},{timeGPU2}");
                     }
                 }
             }
@@ -110,7 +124,7 @@ namespace GPUVerb
 
                     using (var writer = new StreamWriter(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
                     {
-                        writer.WriteLine("grid size, CPU time, GPU time");
+                        writer.WriteLine("grid size, CPU time, GPU time, GPU2 time");
                     }
                 }
                 Test(path, true);
@@ -129,7 +143,7 @@ namespace GPUVerb
 
                     using (var writer = new StreamWriter(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
                     {
-                        writer.WriteLine("grid size, GPU time");
+                        writer.WriteLine("grid size, GPU time, GPU2 time");
                     }
                 }
                 Test(path, false);

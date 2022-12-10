@@ -34,7 +34,8 @@ namespace GPUVerb
         {
             // test fdtd shader
             {
-                var fdtdShader = Resources.Load<ComputeShader>("Shaders/FDTD");
+                Debug.Log("---FDTD SANITY TEST---");
+                var fdtdShader = Resources.Load<ComputeShader>("Shaders/FDTD2");
                 int cellKernel = fdtdShader.FindKernel("KernTest");
 
                 fdtdShader.GetKernelThreadGroupSizes(cellKernel, out uint x, out uint y, out uint _);
@@ -56,6 +57,7 @@ namespace GPUVerb
 
             // test shared buffer between 2 shaders
             {
+                Debug.Log("---SHARING COMPUTE BUFFER TEST---");
                 var c1 = Resources.Load<ComputeShader>("Shaders/Test/CS1");
                 var c2 = Resources.Load<ComputeShader>("Shaders/Test/CS2");
 
@@ -73,6 +75,33 @@ namespace GPUVerb
                 c2.Dispatch(kern2, 1, 1, 1);
                 buf.GetData(data);
 
+                Debug.Log(string.Join(',', data));
+            }
+
+            // test loop dispatch vs single dispatch
+            {
+                Debug.Log("---DISPATCH TEST---");
+                var shader = Resources.Load<ComputeShader>("Shaders/Test/CS1");
+                using var buf = new ComputeBuffer(8, sizeof(int));
+                var data = new int[8];
+
+                var bigKern = shader.FindKernel("bigKernel");
+                var smallKern = shader.FindKernel("smallKernel");
+                shader.SetBuffer(bigKern, "res", buf);
+                shader.Dispatch(bigKern, 1, 1, 1);
+                buf.GetData(data);
+                Debug.Log(string.Join(',', data));
+
+                Array.Fill(data, 0);
+                buf.SetData(data);
+
+                shader.SetBuffer(smallKern, "res", buf);
+                for (int i=0; i<8; ++i)
+                {
+                    shader.SetInt("iter", i);
+                    shader.Dispatch(smallKern, 1, 1, 1);
+                }
+                buf.GetData(data);
                 Debug.Log(string.Join(',', data));
             }
         }

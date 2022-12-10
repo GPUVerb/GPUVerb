@@ -52,7 +52,7 @@ namespace GPUVerb
         {
             if(concise)
             {
-                return $"{pressure} {velX} {velY} {b} {by}";
+                return $"{pressure.ToString("0.0")} {velX.ToString("0.0")} {velY.ToString("0.0")} {b} {by}";
             }
             else
             {
