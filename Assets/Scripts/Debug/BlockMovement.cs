@@ -20,7 +20,11 @@ public class BlockMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(startMovement)
+        if (Input.GetKeyDown("1"))
+        {
+            startMovement = !startMovement;
+        }
+        if (startMovement)
         {
             transform.position += direction * (speed * Time.deltaTime) * positive;
             if ((transform.position - startPosition).magnitude >= MovementRange)
