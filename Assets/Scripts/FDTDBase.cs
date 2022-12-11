@@ -284,6 +284,27 @@ namespace GPUVerb
                 Mathf.Clamp(Mathf.FloorToInt(pos.y / m_cellSize), 0, m_gridSizeInCells.y - 1)
             );
         }
+        protected Vector2Int GetDispatchDim(Vector2Int inputDim, Vector2Int threadGroupDim)
+        {
+            int gridDimX = (inputDim.x + threadGroupDim.x - 1) / threadGroupDim.x;
+            int gridDimY = (inputDim.y + threadGroupDim.y - 1) / threadGroupDim.y;
+            return new Vector2Int(gridDimX, gridDimY);
+        }
+
+        protected void GetGeometryUpdateParams(in PlaneVerbAABB bounds, out Vector2Int gridMin, out Vector2Int gridMax)
+        {
+            gridMin = ToGridPos(bounds.min);
+            gridMax = ToGridPos(bounds.max);
+            if (gridMax.x <= gridMin.x)
+            {
+                gridMax.x = gridMin.x + 1;
+            }
+            if (gridMax.y <= gridMin.y)
+            {
+                gridMax.y = gridMin.y + 1;
+            }
+        }
+
         public abstract void Dispose();
 
         #region DEBUG

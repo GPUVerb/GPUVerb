@@ -50,7 +50,7 @@ namespace GPUVerb
     public struct PlaneVerbAABB : IEquatable<PlaneVerbAABB>
     {
         // an empty aabb
-        public static PlaneVerbAABB s_empty = new PlaneVerbAABB(new PlaneVerbVec2(0, 0), 0, 0, 0);
+        public static PlaneVerbAABB s_empty = new PlaneVerbAABB(new PlaneVerbVec2(-1, -1), 0, 0, 0);
         public PlaneVerbVec2 position;
         public float width;
         public float height;
