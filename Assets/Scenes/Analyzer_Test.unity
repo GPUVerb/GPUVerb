@@ -778,7 +778,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_gridDim: {x: 10, y: 10}
-  m_shader: {fileID: 7200000, guid: 84026affb5bea7f48919d57e7c5d6ba6, type: 3}
 --- !u!114 &1861659892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -795,5 +794,4 @@ MonoBehaviour:
   m_cubeSize: 0.1
   m_baseHeight: 0
   m_motionScale: 1
-  m_simTime: 5
   m_listener: {fileID: 1515586205}
