@@ -23,6 +23,8 @@ namespace GPUVerb
         int m_geomID = FDTDBase.k_invalidGeomID;
         Collider m_collider = null;
 
+        public AbsorptionCoefficient Absorption { get => m_absorption; set => m_absorption = value; }
+
         // get rasterized bounds based on player head plane
         bool IsWithinPlayerHeadSlice()
         {
