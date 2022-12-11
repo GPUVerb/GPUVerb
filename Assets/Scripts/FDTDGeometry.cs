@@ -19,31 +19,30 @@ namespace GPUVerb
         TransformState m_lastTransformState = new TransformState();
         bool m_lastWinthinHead = false;
 
-
         int m_geomID = FDTDBase.k_invalidGeomID;
-        Collider m_collider = null;
+        Collider[] m_colliders = null;
+        Bounds m_bounds = new Bounds(Vector3.zero, Vector3.zero);
 
         public AbsorptionCoefficient Absorption { get => m_absorption; set => m_absorption = value; }
 
         // get rasterized bounds based on player head plane
         bool IsWithinPlayerHeadSlice()
         {
-            Bounds b = m_collider.bounds;
             float headY = Listener.Position.y;
-            float thisY = b.center.y;
-            float halfHeight = b.extents.y; // extents are half sizes
+            float thisY = m_bounds.center.y;
+            float halfHeight = m_bounds.extents.y; // extents are half sizes
             return (thisY - halfHeight) <= headY && (thisY + halfHeight) >= headY;
         }
 
         public PlaneVerbAABB GetBounds()
         {
-            return new PlaneVerbAABB(m_collider.bounds, AbsorptionConstants.GetAbsorption(m_absorption));
+            return new PlaneVerbAABB(m_bounds, AbsorptionConstants.GetAbsorption(m_absorption));
         }
 
         // Start is called before the first frame update
         void Start()
         {
-            m_collider = GetComponent<Collider>();
+            RecalculateBounds();
 
             m_lastTransformState = new TransformState(transform);
             m_lastAbsorption = m_absorption;
@@ -84,6 +83,7 @@ namespace GPUVerb
                 TransformState curState = new TransformState(transform);
                 if (!curState.Equals(m_lastTransformState))
                 {
+                    RecalculateBounds();
                     GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
                     m_lastTransformState = curState;
                 }
@@ -99,23 +99,31 @@ namespace GPUVerb
             GPUVerbContext.Instance.RemoveGeometry(m_geomID);
         }
 
-#if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void RecalculateBounds()
         {
-            if(m_collider == null)
+            if(m_colliders == null)
             {
-                m_collider = GetComponent<Collider>();
+                m_colliders = GetComponentsInChildren<Collider>();
             }
+            m_bounds = new Bounds(transform.position, Vector3.zero);
+            foreach (Collider collider in m_colliders)
+            {
+                m_bounds.Encapsulate(collider.bounds);
+            }
+        }
 
-
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
             Color save = Gizmos.color;
             if(EditorApplication.isPlaying && IsWithinPlayerHeadSlice())
             {
                 Gizmos.color = Color.green;
             }
 
-            Gizmos.DrawWireCube(m_collider.bounds.center, m_collider.bounds.size);
-            Handles.Label(m_collider.bounds.center, Enum.GetName(typeof(AbsorptionCoefficient), m_absorption));
+            RecalculateBounds();
+            Gizmos.DrawWireCube(m_bounds.center, m_bounds.size);
+            Handles.Label(m_bounds.center, Enum.GetName(typeof(AbsorptionCoefficient), m_absorption));
 
             Gizmos.color = save;
         }

@@ -163,12 +163,6 @@ namespace GPUVerb
             return m_curResult;
         }
 
-        Vector2Int GetDispatchDim(Vector2Int inputDim)
-        {
-            int gridDimX = (inputDim.x + m_threadGroupDim.x - 1) / m_threadGroupDim.x;
-            int gridDimY = (inputDim.y + m_threadGroupDim.y - 1) / m_threadGroupDim.y;
-            return new Vector2Int(gridDimX, gridDimY);
-        }
 
         private void ContinueResponse(bool forceAll)
         {
@@ -177,7 +171,7 @@ namespace GPUVerb
                 return;
             }
 
-            Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
+            Vector2Int dim = GetDispatchDim(m_gridSizeInCells, m_threadGroupDim);
             int steps = forceAll ? m_responseLength : m_timeStepsPerFixedUpdate;
 
             for (int cnt = 0;
@@ -231,16 +225,13 @@ namespace GPUVerb
                 return;
             }
 
-            Vector2Int boundsMin = ToGridPos(bounds.min);
-            Vector2Int boundsMax = ToGridPos(bounds.max);
-            Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
-
+            GetGeometryUpdateParams(bounds, out Vector2Int boundsMin, out Vector2Int boundsMax);
             m_shader.SetInts(k_updateDimShaderParam, new int[] { boundsMin.x, boundsMin.y, boundsMax.x, boundsMax.y });
             m_shader.SetFloat(k_absorptionShaderParam, bounds.absorption);
             m_shader.SetBuffer(m_addGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
             m_shader.SetBuffer(m_addGeomKernel, k_gridShaderParam, m_gridBuf);
 
-            Vector2Int dim = GetDispatchDim(boundsSize);
+            Vector2Int dim = GetDispatchDim(boundsMax - boundsMin + Vector2Int.one, m_threadGroupDim);
             m_shader.Dispatch(m_addGeomKernel, dim.x, dim.y, 1);
         }
         void RemoveGeometryHelper(in PlaneVerbAABB bounds)
@@ -250,15 +241,12 @@ namespace GPUVerb
                 return;
             }
 
-            Vector2Int boundsMin = ToGridPos(bounds.min);
-            Vector2Int boundsMax = ToGridPos(bounds.max);
-            Vector2Int boundsSize = boundsMax - boundsMin + new Vector2Int(1, 1);
-
+            GetGeometryUpdateParams(bounds, out Vector2Int boundsMin, out Vector2Int boundsMax);
             m_shader.SetInts(k_updateDimShaderParam, new int[] { boundsMin.x, boundsMin.y, boundsMax.x, boundsMax.y });
             m_shader.SetBuffer(m_removeGeomKernel, k_boundariesShaderParam, m_boundaryBuffer);
             m_shader.SetBuffer(m_removeGeomKernel, k_gridShaderParam, m_gridBuf);
 
-            Vector2Int dim = GetDispatchDim(boundsSize);
+            Vector2Int dim = GetDispatchDim(boundsMax - boundsMin + Vector2Int.one, m_threadGroupDim);
             m_shader.Dispatch(m_removeGeomKernel, dim.x, dim.y, 1);
         }
 
