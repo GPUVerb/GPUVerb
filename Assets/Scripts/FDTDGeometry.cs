@@ -33,8 +33,8 @@ namespace GPUVerb
             float halfHeight = m_bounds.extents.y; // extents are half sizes
             return (thisY - halfHeight) <= headY && (thisY + halfHeight) >= headY;
         }
-
-        public PlaneVerbAABB GetBounds()
+        public Bounds GetBounds() => m_bounds;
+        public PlaneVerbAABB GetPlaneverbBounds()
         {
             return new PlaneVerbAABB(m_bounds, AbsorptionConstants.GetAbsorption(m_absorption));
         }
@@ -49,7 +49,7 @@ namespace GPUVerb
 
             if(IsWithinPlayerHeadSlice())
             {
-                m_geomID = GPUVerbContext.Instance.AddGeometry(GetBounds());
+                m_geomID = GPUVerbContext.Instance.AddGeometry(GetPlaneverbBounds());
                 m_lastWinthinHead = true;
             }
             else
@@ -69,11 +69,11 @@ namespace GPUVerb
             {
                 if(m_geomID == FDTDBase.k_invalidGeomID)
                 {
-                    m_geomID = GPUVerbContext.Instance.AddGeometry(GetBounds());
+                    m_geomID = GPUVerbContext.Instance.AddGeometry(GetPlaneverbBounds());
                 }
                 else
                 {
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetPlaneverbBounds());
                 }
             }
             m_lastWinthinHead = withinHead;
@@ -84,12 +84,12 @@ namespace GPUVerb
                 if (!curState.Equals(m_lastTransformState))
                 {
                     RecalculateBounds();
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetPlaneverbBounds());
                     m_lastTransformState = curState;
                 }
                 if (m_absorption != m_lastAbsorption)
                 {
-                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetBounds());
+                    GPUVerbContext.Instance.UpdateGeometry(m_geomID, GetPlaneverbBounds());
                     m_lastAbsorption = m_absorption;
                 }
             }

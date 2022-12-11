@@ -185,8 +185,8 @@ namespace GPUVerb
                 var geoms = go.GetComponentsInChildren<FDTDGeometry>();
                 foreach(var geom in geoms)
                 {
-                    correct.AddGeometry(geom.GetBounds());
-                    solver.AddGeometry(geom.GetBounds());
+                    correct.AddGeometry(geom.GetPlaneverbBounds());
+                    solver.AddGeometry(geom.GetPlaneverbBounds());
                 }
             }
             correct.ProcessGeometryUpdates();

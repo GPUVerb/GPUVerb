@@ -110,6 +110,16 @@ namespace GPUVerb
             }
         }
 
+        bool IsValidObj(GameObject obj, out FDTDGeometry geom, out DSPUploader uploader, out Bounds bounds)
+        {
+            geom = obj.GetComponentInChildren<FDTDGeometry>();
+            uploader = obj.GetComponent<DSPUploader>();
+            if (geom) bounds = geom.GetBounds();
+            else if (uploader) bounds = obj.GetComponent<Collider>().bounds;
+            else bounds = new Bounds();
+            return geom || uploader;
+        }
+
         // Update is called once per frame
         void Update()
         {
@@ -123,7 +133,7 @@ namespace GPUVerb
                     if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var info, 20f))
                     {
                         GameObject obj = info.collider.gameObject;
-                        if (obj.GetComponentInChildren<FDTDGeometry>())
+                        if (IsValidObj(obj, out var _, out var _, out var _))
                         {
                             SwitchHighlight(obj);
                         }
@@ -159,6 +169,54 @@ namespace GPUVerb
             }
         }
 
+        void DrawGeomMenu(GameObject obj, FDTDGeometry geom)
+        {
+            var save = GUI.color;
+            GUI.color = Color.red;
+            GUIStyle style = new GUIStyle() { fontSize = 15 };
+            GUILayout.Label("Current: " + Enum.GetName(typeof(AbsorptionCoefficient), geom.Absorption), style);
+            GUI.color = save;
+
+            if (GUILayout.Button("Delete Geometry"))
+            {
+                Destroy(obj);
+            }
+
+            m_scrollPos = GUILayout.BeginScrollView(m_scrollPos, GUILayout.Width(200), GUILayout.Height(200));
+            {
+                for (int i = 0; i < (int)AbsorptionCoefficient.Count; ++i)
+                {
+                    if (GUILayout.Button(Enum.GetName(typeof(AbsorptionCoefficient), i)))
+                    {
+                        geom.Absorption = (AbsorptionCoefficient)i;
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+
+        void DrawUploaderMenu(GameObject obj, DSPUploader uploader)
+        {
+            var save = GUI.color;
+            GUI.color = Color.red;
+            GUIStyle style = new GUIStyle() { fontSize = 15 };
+            GUILayout.Label("Current: " + Enum.GetName(typeof(SourceDirectivityPattern), uploader.sourcePattern), style);
+            GUI.color = save;
+
+            if (GUILayout.Button("Delete Source"))
+            {
+                Destroy(obj);
+            }
+            
+            foreach (SourceDirectivityPattern pattern in Enum.GetValues(typeof(SourceDirectivityPattern)))
+            {
+                if (GUILayout.Button(Enum.GetName(typeof(SourceDirectivityPattern), pattern)))
+                {
+                    uploader.sourcePattern = pattern;
+                }
+            }
+        }
+
         void DrawObjInfoMenu(GameObject obj)
         {
             if(obj == null)
@@ -166,13 +224,15 @@ namespace GPUVerb
                 m_usingObjMenu = false;
                 return;
             }
-            FDTDGeometry geom = obj.GetComponent<FDTDGeometry>();
-            if(geom == null)
+
+
+            if(!IsValidObj(obj, out FDTDGeometry geom, out DSPUploader uploader, out Bounds bounds))
             {
                 m_usingObjMenu = false;
                 return;
             }
-            var worldPos = geom.GetComponent<Collider>().bounds.center;
+
+            var worldPos = bounds.center;
             var position = Camera.main.WorldToScreenPoint(worldPos);
 
             const float areaSizeX = 200, areaSizeY = 400;
@@ -186,28 +246,14 @@ namespace GPUVerb
             {
                 using var scope = new GUILayout.VerticalScope();
 
-                var save = GUI.color;
-                GUI.color = Color.red;
-                GUIStyle style = new GUIStyle() { fontSize = 15 };
-                GUILayout.Label("Current: " + Enum.GetName(typeof(AbsorptionCoefficient), geom.Absorption), style);
-                GUI.color = save;
-                
-                if (GUILayout.Button("Delete Geometry"))
+                if(geom)
                 {
-                    Destroy(obj);
+                    DrawGeomMenu(obj, geom);
                 }
-
-                m_scrollPos = GUILayout.BeginScrollView(m_scrollPos, GUILayout.Width(areaSizeX), GUILayout.Height(areaSizeX));
+                if(uploader)
                 {
-                    for (int i= 0; i<(int)AbsorptionCoefficient.Count; ++i)
-                    {
-                        if(GUILayout.Button(Enum.GetName(typeof(AbsorptionCoefficient), i)))
-                        {
-                            geom.Absorption = (AbsorptionCoefficient) i;
-                        }
-                    }
+                    DrawUploaderMenu(obj, uploader);
                 }
-                GUILayout.EndScrollView();
             }
             GUILayout.EndArea();
 

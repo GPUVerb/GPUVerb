@@ -19,11 +19,11 @@ public class FirstPersonLook : MonoBehaviour
             if(enableControl != value)
             {
                 enableControl = value;
-                if(!enableControl)
+/*                if(!enableControl)
                 {
                     velocity = Vector2.zero;
                     frameVelocity = Vector2.zero;
-                }
+                }*/
             }
         }
     }
