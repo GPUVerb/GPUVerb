@@ -31,6 +31,8 @@ namespace GPUVerb
 
         GameObject m_curObj = null;
 
+        bool m_usingObjMenu = false;
+
         List<T> Gather<T>()
         {
             List<T> ret = new List<T>();
@@ -113,7 +115,10 @@ namespace GPUVerb
         {
             if(m_objHighlight)
             {
-                if(Input.GetMouseButtonDown(0))
+                // only allow switching selection if:
+                // mouse not over the object menu
+                // and left mouse button pressed
+                if(Input.GetMouseButtonDown(0) && !m_usingObjMenu)
                 {
                     if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var info, 20f))
                     {
@@ -158,11 +163,13 @@ namespace GPUVerb
         {
             if(obj == null)
             {
+                m_usingObjMenu = false;
                 return;
             }
             FDTDGeometry geom = obj.GetComponent<FDTDGeometry>();
             if(geom == null)
             {
+                m_usingObjMenu = false;
                 return;
             }
             var worldPos = geom.GetComponent<Collider>().bounds.center;
@@ -174,7 +181,8 @@ namespace GPUVerb
 
             // var textSize = GUI.skin.label.CalcSize(new GUIContent(text));
 
-            GUILayout.BeginArea(new Rect(position.x, Screen.height - position.y, areaSizeX, areaSizeY));
+            var areaRect = new Rect(position.x, Screen.height - position.y, areaSizeX, areaSizeY);
+            GUILayout.BeginArea(areaRect);
             {
                 using var scope = new GUILayout.VerticalScope();
 
@@ -203,6 +211,8 @@ namespace GPUVerb
             }
             GUILayout.EndArea();
 
+            if(Event.current.type == EventType.Repaint)
+                m_usingObjMenu = areaRect.Contains(Event.current.mousePosition);
         }
 
         void OnGUI()
@@ -225,8 +235,7 @@ namespace GPUVerb
             if (m_hidden) return;
 
 
-            GUILayout.Label("Press Alt to unlock cursor", "Tooltip");
-
+            GUILayout.Label("Press Alt to unlock cursor");
             GUILayout.Label("Scenes");
             foreach (var scene in m_scenes)
             {
