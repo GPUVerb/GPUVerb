@@ -110,4 +110,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60ca484123e9d246a550539e93d869a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_absorption: 13
+  m_absorption: 20
