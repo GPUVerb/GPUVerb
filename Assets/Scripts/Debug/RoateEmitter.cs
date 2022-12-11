@@ -14,6 +14,10 @@ public class RoateEmitter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(Input.GetKeyDown("2"))
+        {
+            startRotate = !startRotate;
+        }
         if (startRotate)
         {
             transform.Rotate(0, angularSpeed * Time.deltaTime, 0);
