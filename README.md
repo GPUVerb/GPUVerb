@@ -2,9 +2,11 @@ GPUVerb
 ==================================
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture, Final Project**
 
+For a rough summary of GPUVerb, see the [final presentation slide deck](https://docs.google.com/presentation/d/1_dvESQ91yGhgWl9Ghrnkg49GWdWTlzv3eApd4zdJ_No/edit?usp=sharing).
+
 Evan S, Runshi Gu, Tongwei Dai
 
-Built for: Windows 10/11 (x64)  
+Plugin built for for: Windows 10/11 (x64)  
 Tested on
 - Windows 10, Ryzen 7 4800H @ 2.9 GHz, RTX 3050 (Laptop)
 
