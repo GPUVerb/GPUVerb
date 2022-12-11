@@ -4,5 +4,11 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/DSPDemo.unity
+    guid: b536a54580e6c4748b50c97c18685008
+  - enabled: 1
+    path: Assets/Scenes/Complex Level.unity
+    guid: 4b72094a889da4e42b31d11c46eb36fa
   m_configObjects: {}

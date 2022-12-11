@@ -401,10 +401,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 1773623360729482, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_RootOrder
       value: 3
@@ -449,20 +445,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 20437472682476688, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-      propertyPath: m_ClearFlags
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 20437472682476688, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-      propertyPath: m_BackGroundColor.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 20437472682476688, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-      propertyPath: m_BackGroundColor.g
-      value: 0.3532734
-      objectReference: {fileID: 0}
-    - target: {fileID: 20437472682476688, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-      propertyPath: m_BackGroundColor.r
+    - target: {fileID: 114103969153859672, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -1131,25 +1115,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &843105327 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1593727746557118, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
-  m_PrefabInstance: {fileID: 163097988}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &843105334
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 843105327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c530fe221d24ea944ab7c9fcafb2b387, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ampMultiplier: 200
-  xValIncrement: 0.0004
 --- !u!1001 &1413898659
 PrefabInstance:
   m_ObjectHideFlags: 0

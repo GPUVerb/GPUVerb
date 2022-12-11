@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7238947110927453768}
   - component: {fileID: 7238947110927453769}
   - component: {fileID: 8016041968149482439}
+  - component: {fileID: 8106331434332790808}
   m_Layer: 0
   m_Name: Context
   m_TagString: Untagged
@@ -69,3 +70,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_highlightColor: {r: 1, g: 1, b: 1, a: 0.38431373}
+--- !u!114 &8106331434332790808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7238947110927453766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c530fe221d24ea944ab7c9fcafb2b387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ampMultiplier: 200
+  xValIncrement: 0.0004

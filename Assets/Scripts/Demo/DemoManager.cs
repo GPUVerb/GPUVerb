@@ -16,10 +16,18 @@ namespace GPUVerb
         bool m_hidden = false;
         
         List<DSPUploader> m_uploaders = null;
-        List<Renderer> m_renderers = null;
+        List<ReverbWriter> m_reverbs = null;
+
+        FirstPersonLook m_look = null;
+        FirstPersonMovement m_move = null;
 
         bool m_disableDry = false;
+        bool m_disableReverb = false;
+
+
         bool m_objHighlight = false;
+
+        Vector2 m_scrollPos;
 
         GameObject m_curObj = null;
 
@@ -47,7 +55,10 @@ namespace GPUVerb
                 m_scenes[i] = Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(i));
             }
             m_uploaders = Gather<DSPUploader>();
-            m_renderers = Gather<Renderer>();
+            m_reverbs = Gather<ReverbWriter>();
+            m_look = Gather<FirstPersonLook>()[0];
+            m_move = Gather<FirstPersonMovement>()[0];
+
             Cursor.visible = true;
         }
 
@@ -102,22 +113,44 @@ namespace GPUVerb
         {
             if(m_objHighlight)
             {
-                if(Physics.Raycast(new Ray(Listener.Position + new Vector3(0,0.2f,0), Listener.Forward), out var info, 4f))
+                if(Input.GetMouseButtonDown(0))
                 {
-                    GameObject obj = info.collider.gameObject;
-                    if (obj.GetComponentInChildren<FDTDGeometry>())
+                    if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var info, 20f))
                     {
-                        SwitchHighlight(obj);
+                        GameObject obj = info.collider.gameObject;
+                        if (obj.GetComponentInChildren<FDTDGeometry>())
+                        {
+                            SwitchHighlight(obj);
+                        }
+                    }
+                    else
+                    {
+                        SwitchHighlight(null);
                     }
                 }
                 else
                 {
-                    SwitchHighlight(null);
+                    // do nothing, keep current selection
                 }
             }
             else
             {
                 SwitchHighlight(null);
+            }
+
+            if(Input.GetKeyDown(KeyCode.LeftAlt))
+            {
+                m_objHighlight = !m_objHighlight;
+                m_move.EnableControl = m_look.EnableControl = !m_objHighlight;
+
+                if(m_look.EnableControl)
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                }
             }
         }
 
@@ -133,21 +166,43 @@ namespace GPUVerb
                 return;
             }
             var worldPos = geom.GetComponent<Collider>().bounds.center;
-
             var position = Camera.main.WorldToScreenPoint(worldPos);
-            var text = Enum.GetName(typeof(AbsorptionCoefficient), geom.Absorption);
-            var textSize = GUI.skin.label.CalcSize(new GUIContent(text));
 
-            var save = GUI.color;
-            GUI.color = Color.red;
+            const float areaSizeX = 200, areaSizeY = 400;
+            position.x = Mathf.Clamp(position.x, areaSizeX / 2 + 15, Screen.width - areaSizeX / 2 - 15);
+            position.y = Mathf.Clamp(position.y, areaSizeY / 2 + 15, Screen.height - areaSizeY / 2 - 15);
 
-            GUILayout.BeginArea(new Rect(position.x, Screen.height - position.y, textSize.x, textSize.y));
+            // var textSize = GUI.skin.label.CalcSize(new GUIContent(text));
+
+            GUILayout.BeginArea(new Rect(position.x, Screen.height - position.y, areaSizeX, areaSizeY));
             {
-                GUILayout.Label(text);
+                using var scope = new GUILayout.VerticalScope();
+
+                var save = GUI.color;
+                GUI.color = Color.red;
+                GUIStyle style = new GUIStyle() { fontSize = 15 };
+                GUILayout.Label("Current: " + Enum.GetName(typeof(AbsorptionCoefficient), geom.Absorption), style);
+                GUI.color = save;
+                
+                if (GUILayout.Button("Delete Geometry"))
+                {
+                    Destroy(obj);
+                }
+
+                m_scrollPos = GUILayout.BeginScrollView(m_scrollPos, GUILayout.Width(areaSizeX), GUILayout.Height(areaSizeX));
+                {
+                    for (int i= 0; i<(int)AbsorptionCoefficient.Count; ++i)
+                    {
+                        if(GUILayout.Button(Enum.GetName(typeof(AbsorptionCoefficient), i)))
+                        {
+                            geom.Absorption = (AbsorptionCoefficient) i;
+                        }
+                    }
+                }
+                GUILayout.EndScrollView();
             }
             GUILayout.EndArea();
 
-            GUI.color = save;
         }
 
         void OnGUI()
@@ -155,19 +210,22 @@ namespace GPUVerb
             using var layout = new GUILayout.VerticalScope(!m_hidden ? "Demo Menu" : "", "window");
             if (!m_hidden)
             {
-                if (GUILayout.Button("-", GUILayout.Width(20)))
+                if (GUILayout.Button("Hide"))
                 {
                     m_hidden = true;
                 }
             }
             else
             {
-                if (GUILayout.Button("+", GUILayout.Width(20)))
+                if (GUILayout.Button("Unhide"))
                 {
                     m_hidden = false;
                 }
             }
             if (m_hidden) return;
+
+
+            GUILayout.Label("Press Alt to unlock cursor", "Tooltip");
 
             GUILayout.Label("Scenes");
             foreach (var scene in m_scenes)
@@ -202,7 +260,28 @@ namespace GPUVerb
                 }
             }
 
-            m_objHighlight = GUILayout.Toggle(m_objHighlight, "obj info");
+            if(!m_disableReverb)
+            {
+                if (GUILayout.Button("Disable Reverb"))
+                {
+                    m_disableReverb = true;
+                    foreach (var reverb in m_reverbs)
+                    {
+                        reverb.enabled = false;
+                    }
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Enable Reverb"))
+                {
+                    m_disableReverb = false;
+                    foreach (var reverb in m_reverbs)
+                    {
+                        reverb.enabled = true;
+                    }
+                }
+            }
             DrawObjInfoMenu(m_curObj);
         }
     }

@@ -10,6 +10,23 @@ public class FirstPersonLook : MonoBehaviour
     Vector2 velocity;
     Vector2 frameVelocity;
 
+    private bool enableControl;
+    public bool EnableControl
+    {
+        get => enableControl;
+        set
+        {
+            if(enableControl != value)
+            {
+                enableControl = value;
+                if(!enableControl)
+                {
+                    velocity = Vector2.zero;
+                    frameVelocity = Vector2.zero;
+                }
+            }
+        }
+    }
 
     void Reset()
     {
@@ -20,11 +37,15 @@ public class FirstPersonLook : MonoBehaviour
     void Start()
     {
         // Lock the mouse cursor to the game screen.
-        // Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked;
+        EnableControl = true;
     }
 
     void Update()
     {
+        if (!enableControl)
+            return;
+
         // Get smooth velocity.
         Vector2 mouseDelta = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
         Vector2 rawFrameVelocity = Vector2.Scale(mouseDelta, Vector2.one * sensitivity);
