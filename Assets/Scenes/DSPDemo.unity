@@ -1226,6 +1226,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_gridMaxCorner: {x: 100, y: 100}
+--- !u!1 &1901384384 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1593727746557118, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
+  m_PrefabInstance: {fileID: 163097988}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1901384391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901384384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c530fe221d24ea944ab7c9fcafb2b387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ampMultiplier: 200
+  xValIncrement: 0.0001
 --- !u!1001 &202882798861629330
 PrefabInstance:
   m_ObjectHideFlags: 0

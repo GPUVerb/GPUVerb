@@ -11,8 +11,7 @@ GameObject:
   - component: {fileID: 409136}
   - component: {fileID: 3388764}
   - component: {fileID: 2334336}
-  - component: {fileID: 64340570207622500}
-  - component: {fileID: 64363777061285678}
+  - component: {fileID: 1525625294520164955}
   - component: {fileID: 6804409028090490704}
   m_Layer: 0
   m_Name: SM_Bld_Village_06
@@ -86,8 +85,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &64340570207622500
-MeshCollider:
+--- !u!65 &1525625294520164955
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -96,24 +95,9 @@ MeshCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 43098218579540376, guid: a92ef9b05025b864a94a4e7000ecdb8a, type: 2}
---- !u!64 &64363777061285678
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 122170}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 43698610488663518, guid: a92ef9b05025b864a94a4e7000ecdb8a, type: 2}
+  serializedVersion: 2
+  m_Size: {x: 7.65071, y: 3.2885613, z: 6.462451}
+  m_Center: {x: 0.0000011920929, y: 1.6442807, z: 0}
 --- !u!114 &6804409028090490704
 MonoBehaviour:
   m_ObjectHideFlags: 0

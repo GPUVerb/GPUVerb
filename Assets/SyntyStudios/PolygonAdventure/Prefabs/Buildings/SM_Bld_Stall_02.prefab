@@ -11,8 +11,7 @@ GameObject:
   - component: {fileID: 456058}
   - component: {fileID: 3329274}
   - component: {fileID: 2359488}
-  - component: {fileID: 64910415155337614}
-  - component: {fileID: 64017068625309334}
+  - component: {fileID: 4301902125842455667}
   - component: {fileID: 4493505814863181092}
   m_Layer: 0
   m_Name: SM_Bld_Stall_02
@@ -86,8 +85,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &64910415155337614
-MeshCollider:
+--- !u!65 &4301902125842455667
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -96,24 +95,9 @@ MeshCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 43049497898551394, guid: e2cf7897ae25481479c19e437a8d74eb, type: 2}
---- !u!64 &64017068625309334
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 116484}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 43258406967547298, guid: e2cf7897ae25481479c19e437a8d74eb, type: 2}
+  serializedVersion: 2
+  m_Size: {x: 2.6430383, y: 2.965556, z: 1.8177136}
+  m_Center: {x: 0.06465973, y: 1.482778, z: 0.087454915}
 --- !u!114 &4493505814863181092
 MonoBehaviour:
   m_ObjectHideFlags: 0
