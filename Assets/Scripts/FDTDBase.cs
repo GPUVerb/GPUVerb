@@ -168,6 +168,9 @@ namespace GPUVerb
         public abstract void GenerateResponse(Vector3 listener);
 
         public abstract IFDTDResult GetGrid();
+
+        public virtual void Update() { }
+
         public IEnumerable<Cell> GetResponse(Vector2Int gridPos)
         {
             IFDTDResult grid = GetGrid();

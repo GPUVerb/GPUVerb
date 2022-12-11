@@ -16,7 +16,8 @@ namespace GPUVerb
         [SerializeField]
         private PlaneverbResolution m_simulationRes = PlaneverbResolution.LowResolution;
         [SerializeField]
-        private float m_simulationFreq = 10;
+        private int m_simulationFreq = 10;
+
         private float m_timePerSimFrame = 1;
         private float m_simTimer = 0;
 
@@ -29,7 +30,7 @@ namespace GPUVerb
         private FDTDBase m_FDTDSolver = null;
         private AnalyzerBase m_AnalyzerSolver = null;
         private DSPBase m_DSP = null;
-        private Vector2Int m_lastListenerPos = new Vector2Int(-1,-1);
+        private Vector3 m_lastListenerPos = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
         private Vector3 m_lastListenerForward = Vector3.zero;
 
         private Vector2Int m_gridSize = Vector2Int.zero;
@@ -41,6 +42,7 @@ namespace GPUVerb
         public FDTDBase FDTDSolver { get => m_FDTDSolver; }
         public AnalyzerBase AnalyzerSolver { get => m_AnalyzerSolver; }
         public DSPBase DSP { get => m_DSP; }
+        public int SimulationFreq { get => m_simulationFreq; }
 
         protected override void Init()
         {
@@ -61,9 +63,11 @@ namespace GPUVerb
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            m_simTimer += Time.deltaTime;
+            m_FDTDSolver.Update();
+
+            m_simTimer += Time.fixedDeltaTime;
             if(m_simTimer >= m_timePerSimFrame)
             {
                 Simulate();
@@ -73,19 +77,22 @@ namespace GPUVerb
 
         private void Simulate()
         {
-            bool shouldSimulate = m_FDTDSolver.ProcessGeometryUpdates();
-            bool shouldProcess = false;
+            bool shouldSimulate = true, shouldProcess = true;
+            if (!(m_FDTDSolver is FDTDGPU2))
+            {
+                shouldSimulate = m_FDTDSolver.ProcessGeometryUpdates();
 
-            Vector2Int listenerPos = ToGridPos(Listener.Position);
-            if(m_lastListenerPos != listenerPos)
-            {
-                m_lastListenerPos = listenerPos;
-                shouldSimulate = true;
-            }
-            if(m_lastListenerForward != Listener.Forward)
-            {
-                m_lastListenerForward = Listener.Forward;
-                shouldProcess = true;
+                Vector3 listenerPos = Listener.Position;
+                if (m_lastListenerPos != listenerPos)
+                {
+                    m_lastListenerPos = listenerPos;
+                    shouldSimulate = true;
+                }
+                if (m_lastListenerForward != Listener.Forward)
+                {
+                    m_lastListenerForward = Listener.Forward;
+                    shouldProcess = true;
+                }
             }
 
             if (shouldSimulate)
@@ -102,12 +109,16 @@ namespace GPUVerb
                 }
 
                 Profiler.BeginSample("FDTD");
-                // this call may not be synchronous, so we're not doing precise profiling
-                m_FDTDSolver.GenerateResponse(Listener.Position);
+                {
+                    // this call may not be synchronous, so we're not doing precise profiling
+                    m_FDTDSolver.GenerateResponse(Listener.Position);
+                }
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Analyzer");
-                m_AnalyzerSolver.AnalyzeResponses(m_FDTDSolver.GetGrid(), Listener.Position);
+                {
+                    m_AnalyzerSolver.AnalyzeResponses(m_FDTDSolver.GetGrid(), Listener.Position);
+                }
                 Profiler.EndSample();
 
                 m_DSP.SetListenerPos(Listener.Position, Listener.Forward);

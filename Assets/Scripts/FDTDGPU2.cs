@@ -75,6 +75,13 @@ namespace GPUVerb
 
         Result m_curResult;
 
+        #region Load Balancing
+        // how many time steps should we process for each update
+        int m_timeStepsPerFixedUpdate;
+        int m_curTimeStep;
+        bool m_listenerSet = false;
+        #endregion
+
         public FDTDGPU2(Vector2 gridSize, PlaneverbResolution res) : base(gridSize, res)
         {
             m_shader = Resources.Load<ComputeShader>(k_shaderPath);
@@ -123,11 +130,36 @@ namespace GPUVerb
                 m_boundaryBuffer.SetData(data);
             }
 
+            // bind gridDim
             m_shader.SetInts(k_gridDimShaderParam, new int[] { m_gridSizeInCells.x, m_gridSizeInCells.y, m_responseLength });
+
+            // bind grid
+            m_shader.SetBuffer(m_zeroKernel, k_gridShaderParam, m_gridBuf);
+            m_shader.SetBuffer(m_FDTDKernel, k_gridShaderParam, m_gridBuf);
+
+            // bind boundary
+            m_shader.SetBuffer(m_FDTDKernel, k_boundariesShaderParam, m_boundaryBuffer);
+            // bind courant
+            m_shader.SetFloat(k_courantShaderParam, k_soundSpeed * m_dt / m_cellSize);
+            // bind gaussian pulse
+            m_shader.SetBuffer(m_FDTDKernel, k_gaussianPulseShaderParam, m_gaussianBuffer);
+
+            // init update
+            int freq = GPUVerbContext.Instance.SimulationFreq;
+            int timeStepsPerSec = m_responseLength * freq;
+            m_timeStepsPerFixedUpdate = Mathf.CeilToInt(timeStepsPerSec * Time.fixedDeltaTime);
+            m_curTimeStep = 0;
+            m_listenerSet = false;
         }
 
         public override IFDTDResult GetGrid()
         {
+            if (m_curResult == null)
+            {
+                Debug.LogWarning("FDTD result not ready but the response is wanted");
+                ContinueResponse(true);
+            }
+
             return m_curResult;
         }
 
@@ -138,41 +170,59 @@ namespace GPUVerb
             return new Vector2Int(gridDimX, gridDimY);
         }
 
-        public override void GenerateResponse(Vector3 listener)
+        private void ContinueResponse(bool forceAll)
         {
-            Vector2Int listenerPosGrid = ToGridPos(new Vector2(listener.x, listener.z));
-            Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
-
-            // take care of t == 0
-            m_shader.SetBuffer(m_zeroKernel, k_gridShaderParam, m_gridBuf);
-            m_shader.Dispatch(m_zeroKernel, dim.x, dim.y, 1);
-
-            // required binding: 
-            //     gridDim, curTime, grid, boundaries, courant, listenerPos, gaussianPulse
-
-            // bind grid
-            m_shader.SetBuffer(m_FDTDKernel, k_gridShaderParam, m_gridBuf);
-            // bind boundary
-            m_shader.SetBuffer(m_FDTDKernel, k_boundariesShaderParam, m_boundaryBuffer);
-            // bind courant
-            m_shader.SetFloat(k_courantShaderParam, k_soundSpeed * m_dt / m_cellSize);
-            // bind listener pos
-            m_shader.SetFloats(k_listenerPosShaderParam, new float[] { listenerPosGrid.x, listenerPosGrid.y });
-            // bind gaussian pulse
-            m_shader.SetBuffer(m_FDTDKernel, k_gaussianPulseShaderParam, m_gaussianBuffer);
-
-            // kernel reads from inBuf and writes to outBuf
-            // outBuf is copied to m_gridBuf[offset]
-            for (int t = 1; t < m_responseLength; ++t)
+            if (!m_listenerSet)
             {
-                // bind current iteration number
-                m_shader.SetInt(k_curTimeShaderParam, t);
-                m_shader.Dispatch(m_FDTDKernel, dim.x, dim.y, 1);
+                return;
             }
 
-            m_curResult = new Result(m_gridBuf, m_gridSizeInCells.x, m_gridSizeInCells.y, m_responseLength);
+            Vector2Int dim = GetDispatchDim(m_gridSizeInCells);
+            int steps = forceAll ? m_responseLength : m_timeStepsPerFixedUpdate;
+
+            for (int cnt = 0;
+                cnt < steps && m_curTimeStep < m_responseLength;
+                ++cnt, ++m_curTimeStep)
+            {
+                if (m_curTimeStep == 0)
+                {
+                    // take care of t == 0
+                    m_shader.Dispatch(m_zeroKernel, dim.x, dim.y, 1);
+                }
+                else
+                {
+                    m_shader.SetInt(k_curTimeShaderParam, m_curTimeStep);
+                    m_shader.Dispatch(m_FDTDKernel, dim.x, dim.y, 1);
+                }
+            }
+
+            if (m_curTimeStep == m_responseLength)
+            {
+                m_curTimeStep = 0;
+                m_curResult = new Result(m_gridBuf, m_gridSizeInCells.x, m_gridSizeInCells.y, m_responseLength);
+            }
         }
 
+        public override void Update()
+        {
+            ContinueResponse(false);
+        }
+
+        public override void GenerateResponse(Vector3 listener)
+        {
+            // continue current response if not finished
+            if (m_curTimeStep != m_responseLength)
+            {
+                ContinueResponse(true);
+            }
+
+            ProcessGeometryUpdates();
+            // set next listener pos
+            Vector2Int listenerPosGrid = ToGridPos(new Vector2(listener.x, listener.z));
+            // bind listener pos
+            m_shader.SetFloats(k_listenerPosShaderParam, new float[] { listenerPosGrid.x, listenerPosGrid.y });
+            m_listenerSet = true;
+        }
 
         void AddGeometryHelper(in PlaneVerbAABB bounds)
         {
