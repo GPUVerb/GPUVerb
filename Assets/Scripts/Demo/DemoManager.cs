@@ -9,15 +9,15 @@ namespace GPUVerb
 {
     class GUIColorScope : IDisposable
     {
-        Color original;
-        public GUIColorScope(Color col)
+        Color originalBackground;
+        public GUIColorScope(Color backgroundColor)
         {
-            original = GUI.color;
-            GUI.color = col;
+            originalBackground = GUI.backgroundColor;
+            GUI.backgroundColor = backgroundColor;
         }
         public void Dispose()
         {
-            GUI.color = original;
+            GUI.color = originalBackground;
         }
     }
 
@@ -281,7 +281,7 @@ namespace GPUVerb
 
         void OnGUI()
         {
-            using var __ = new GUIColorScope(Color.yellow);
+            using var __ = new GUIColorScope(Color.black);
             using var _ = new GUILayout.VerticalScope(!m_hidden ? "Demo Menu" : "", "window");
 
             if (!m_hidden)

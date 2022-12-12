@@ -125,7 +125,7 @@ namespace GPUVerb
                 BoundaryInfo[] data = new BoundaryInfo[planeSize];
                 for (int i = 0; i < planeSize; ++i)
                 {
-                    data[i].absorption = AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.FreeSpace);
+                    data[i].absorption = AbsorptionConstants.GetAbsorption(AbsorptionCoefficient.Vacuum);
                 }
                 m_boundaryBuffer.SetData(data);
             }

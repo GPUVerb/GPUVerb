@@ -2,7 +2,7 @@ namespace GPUVerb
 {
 	public enum AbsorptionCoefficient
 	{
-		FreeSpace,
+		Vacuum,
 		Default,
 		BrickUnglazed,
 		BrickPainted,
