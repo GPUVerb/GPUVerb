@@ -9,7 +9,7 @@ Evan S, Runshi Gu, Tongwei Dai
 Plugin built for for: Windows 10/11 (x64)  
 Tested on
 - Windows 10, Ryzen 7 4800H @ 2.9 GHz, RTX 3050 (Laptop)
-
+- Windows 10, Ryzen 7 5800X @ 3.80 GHz 32GB, RTX3070 (Desktop)
 ## Background
 Realistic audio is highly expensive to simulate. In real-time environments, like video games, this requires heavy precomputing to accurately represent the real nature of sound. In dynamic environments, precomputation is a logistical impossibility. The paper [Interactive sound propagation for dynamic scenes using 2D wave simulation](https://www.microsoft.com/en-us/research/uploads/prod/2020/08/Planeverb_CameraReady_wFonts.pdf) and its corresponding Unity plugin [Planeverb](https://github.com/themattrosen/Planeverb/tree/master/), addresses this by enabling use of realistic and dynamic acoustics for real-time environments. 
 
@@ -43,7 +43,10 @@ Below is a simple visualization of the pressure output of the solver.
 ![](./ReadmeImgs/fdtd_demo.gif)
 
 ### Analyzer
-The analyzer is wholly based on the implementation described in the paper. Each analyzer grid cell takes in the chain of samples at corresponding cell from FDTD grid output, and then we process and calculate physics data into acoustic parameters which can be used at next stage (digital Signal Processor). We optimize the Analyzer sovler further by moving all calculation at each data cell from CPU to GPU (using compute shader). Analysis of this optimization can be found in the [Performance Analysis Section](#performance-analysis).
+The analyzer is mainly based on the implementation described in the paper. Each analyzer grid cell takes in the chain of samples at the corresponding cell from FDTD grid output, and then we process and calculate those physics data into acoustic parameters which can be used for digital processing at next stage (Digital Signal Processor). The calculation are mainly divided into two parts: the first part is encoding acoustic Response, which includes Occlusion, WetGain, RT60, Low Pass Intensity and sound directivity, and the second part is solely econding listener direction, which needs to access data from the first part. 
+
+We optimize the Analyzer sovler further by moving all calculation at each data cell from CPU to GPU (using Unity compute shader). In addtion, we compresseed and integrated Free Grid and Emissionmanager into our GPU Analyzer, and fixed the index error in analyzer grid existed in the original CPU implementation. Performance Analysis of the optimization can be found in the [Performance Analysis Section](#performance-analysis).
+
 
 ### Digital Signal Processor (DSP)
 Planeverb's original digital signal processor (DSP) hijacks Unity's audio system, which may not be desirable. The DSP used here is built with Unity's Spatializer SDK, which is in turn built on Unity's Native Audio SDK. Essentially, a C++ processor is built into a .dll to be incorporated into the Unity engine as a per-source spatializing plugin. The core functionality of this is similar to Planeverb's DSP, with additional changes like 3D distance attenuation and smoothing of audio discontinuties based on listener and source movement. 
@@ -90,8 +93,8 @@ The following table shows the average GPU usage difference of the naive implemen
 
 
 ### Analyzer Solver using Compute Shader
-Our GPU implementation of the Analyzer solver parallelizes the computations of acoustic parameters at each cell.
+Our GPU implementation of the Analyzer solver parallelizes the computations of acoustic parameters at each cell. The runtime of GPU Analyzer is very constant from 5x5 to 50x50 meters grid around 3-10 ms, while CPU Implementation has a exponential inscrease in runtime with the expansion of the grid size.
 
-The runtime of GPU Analyzer is about half the runtime of CPU Implementation. The reason it is not improved by as much as FDTD solver did is because Analyzer only need to process its 2d grid 2 times instead of thousands in FDTD solver, one for encodeResponse, which includes Occlusion, WetGain, RT60,Low Pass Intensity and sound directivity, and the other one for EncodeListenerDirection, which is only for direction attribute.  
+Test results below are run in Mid-resolution grids with 10Hz simulation thread - Windows 10, Ryzen 7 5800X @ 3.80 GHz 32GB, RTX3070 (Desktop)
 
-![](./ReadmeImgs/Analyzer_time.png)
+![](./ReadmeImgs/Analyzer_comparison.png)
