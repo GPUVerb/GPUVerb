@@ -180,21 +180,30 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_maxCorner.x
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_maxCorner.y
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_useRefClass
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
+      propertyPath: m_simulationRes
+      value: 375
+      objectReference: {fileID: 0}
+    - target: {fileID: 7238947110927453769, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
       propertyPath: m_dspConfig.useSpatialization
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 8016041968149482439, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 8106331434332790808, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 9b40a2e5734e21c4798784933323b382, type: 3}
 --- !u!1 &407303710
 GameObject:
@@ -440,8 +449,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be5d3c5f24907224b8fc4f3bfb4dce60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
   startMovement: 0
+  speed: 1
+  MovementRange: 3
+  direction: {x: 0, y: 0, z: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

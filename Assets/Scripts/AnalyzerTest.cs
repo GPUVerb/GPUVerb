@@ -32,13 +32,6 @@ namespace GPUVerb
 
         List<AnalyzerInfo> m_cubeInfos = new List<AnalyzerInfo>();
 
-
-        /*private void Awake()
-        {
-            AnalyzerUnitTest();
-        }*/
-
-
         // Start is called before the first frame update
         private void Start()
         {
@@ -79,6 +72,8 @@ namespace GPUVerb
             FDTDBase FDTDsolver = GPUVerbContext.Instance.FDTDSolver;
 
             FDTDsolver.GenerateResponse(m_listener.position);
+
+
             solver.AnalyzeResponses(FDTDsolver.GetGrid(), m_listener.position);
 
             foreach (AnalyzerInfo info in m_cubeInfos)
@@ -95,12 +90,12 @@ namespace GPUVerb
             {
                 AnalyzerResult data = info.cur;
                 float occlusion = data.sourceDirectivity.x;
-                //Debug.Log(occlusion);
                 float h = m_baseHeight + m_motionScale * occlusion;
                 info.ins.transform.position = new Vector3(info.pos.x, h, info.pos.y);
             }
 
         }
+
 
         private void OnGUI()
         {
