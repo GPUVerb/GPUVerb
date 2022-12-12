@@ -894,7 +894,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 23.55
+      value: 24.59
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalPosition.y
@@ -902,11 +902,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 14.89
+      value: 2.94
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalRotation.x
@@ -914,7 +914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalRotation.z
@@ -926,7 +926,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -90
       objectReference: {fileID: 0}
     - target: {fileID: 4207293392497186, guid: 361870701d3eb1a48b7ba765a7c07265, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -11578,6 +11578,10 @@ PrefabInstance:
       propertyPath: m_audioClip
       value: 
       objectReference: {fileID: 8300000, guid: b57135033d5956342b54921ba4268283, type: 3}
+    - target: {fileID: 5709963362253560635, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
+      propertyPath: WET_GAIN_RATIO
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_RootOrder
       value: 2
