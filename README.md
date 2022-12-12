@@ -67,6 +67,28 @@ The result shows that the GPU implementation scales much better with grid dimens
 
 This makes it possible to simulate wave propagation in relatively large scenes, because the FDTD solver is run every time the listener or a sound source moves, a running time greater than 400ms may cause noticeable delay in the audio output.
 
+### Optimizing GPU Usage
+With the power of parallel computing, we are able to effectively reduce the runtime of the FDTD solver.
+
+However, it is also important to take into account the resultant GPU usage, because in a common use case of our pipeline, i.e. video games, rendering workloads can account for a siginificant GPU usage. The simulation should not starve or lag other GPU workloads in the application.
+
+By default, the simulation thread runs at 10 hz, which means the FDTD solver will run every 0.1 seconds. A naive implementation would dispatch all the FDTD workload at once every 0.1 seconds, resulting in periodic spikes of GPU usage. In a large grid (e.g. 30x30 meters), this will sometimes lag the rendering process, which is not practical.
+
+We tackle this problem by spreading the FDTD workloads across multiple simulation frames, so the FDTD computation will span the whole 0.1 seconds if the simulation frequency is 10hz. Basically, we "even out" the large GPU usage of the FDTD solver.
+
+To test how much performance gain this optimization brings, we set up a sample scene that is representative of a simple 3D video game. The scene uses a large 50x50 grid.
+- The hardware used for this test is i7-8700 @ 3.20 GHz 16GB and RTX 2070
+- The simulation thread is configured to run at 10hz
+
+![](./ReadmeImgs/scene.png)
+
+The following table shows the average GPU usage difference of the naive implementation and the implementation with the above optimization.
+
+|| Naive      | Load Balancing |
+|--| -----------| ----------- |
+|GPU Usage| 46.3%      | 35.9 %      |
+
+
 ### Analyzer Solver using Compute Shader
 Our GPU implementation of the Analyzer solver parallelizes the computations of acoustic parameters at each cell.
 
