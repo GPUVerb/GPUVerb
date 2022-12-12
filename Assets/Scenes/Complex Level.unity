@@ -955,8 +955,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c530fe221d24ea944ab7c9fcafb2b387, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ampMultiplier: 500
-  xValIncrement: 0.0004
+  ampMultiplier: 400
+  xValIncrement: 0.001
 --- !u!1001 &177631313
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7656,7 +7656,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startMovement: 1
-  speed: 3
+  speed: 2
   MovementRange: 8
   direction: {x: 1, y: 0, z: 0}
 --- !u!1001 &1370730421
@@ -9763,9 +9763,13 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1822692680}
     m_Modifications:
+    - target: {fileID: 2075407566743695504, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5709963362253560632, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_Volume
-      value: 0.515
+      value: 0.57
       objectReference: {fileID: 0}
     - target: {fileID: 5709963362253560632, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_audioClip
@@ -9773,7 +9777,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: b31f595d64a930f42916bccd35915456, type: 3}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_LocalPosition.x
@@ -9817,7 +9821,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644533802856796548, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_Name
-      value: Emitter
+      value: Emitter_first
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
@@ -10364,8 +10368,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1678783010}
   - {fileID: 2182099350038943716}
+  - {fileID: 1678783010}
   - {fileID: 2056000519}
   m_Father: {fileID: 0}
   m_RootOrder: 7
@@ -11575,7 +11579,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: b57135033d5956342b54921ba4268283, type: 3}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11619,7 +11623,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644533802856796548, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_Name
-      value: Emitter
+      value: Emitter_singer
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
@@ -12302,9 +12306,13 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1822692680}
     m_Modifications:
+    - target: {fileID: 2075407566743695504, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5709963362253560632, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_Volume
-      value: 0.506
+      value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 5709963362253560632, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_audioClip
@@ -12312,7 +12320,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 0d617f22e3279294788cd5df49b9c3e2, type: 3}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5869741317095106090, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12356,7 +12364,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644533802856796548, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}
       propertyPath: m_Name
-      value: Emitter
+      value: Emitter_second
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4c008825a1c8a5f4a81bdbd9ca4b8968, type: 3}

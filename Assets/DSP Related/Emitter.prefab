@@ -327,7 +327,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sourcePattern: 1
   SMOOTHING: 2
-  WET_GAIN_RATIO: 0.1
+  WET_GAIN_RATIO: 0.5
   SPATIALIZE: 1
   SUPPRESS_DRY_SOUND: 0
 --- !u!65 &7644533802856796549

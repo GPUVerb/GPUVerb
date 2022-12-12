@@ -149,6 +149,7 @@ namespace GPUVerb
                 Test(path, false);
             }
         }
-    }
 #endif
+
+    }
 }

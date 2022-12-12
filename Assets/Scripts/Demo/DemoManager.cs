@@ -7,6 +7,21 @@ using System;
 
 namespace GPUVerb
 {
+    class GUIColorScope : IDisposable
+    {
+        Color original;
+        public GUIColorScope(Color col)
+        {
+            original = GUI.color;
+            GUI.color = col;
+        }
+        public void Dispose()
+        {
+            GUI.color = original;
+        }
+    }
+
+
     public class DemoManager : SingletonBehavior<DemoManager>
     {
         [SerializeField]
@@ -171,11 +186,9 @@ namespace GPUVerb
 
         void DrawGeomMenu(GameObject obj, FDTDGeometry geom)
         {
-            var save = GUI.color;
-            GUI.color = Color.red;
             GUIStyle style = new GUIStyle() { fontSize = 15 };
+            style.normal.textColor = Color.red;
             GUILayout.Label("Current: " + Enum.GetName(typeof(AbsorptionCoefficient), geom.Absorption), style);
-            GUI.color = save;
 
             if (GUILayout.Button("Delete Geometry"))
             {
@@ -197,11 +210,9 @@ namespace GPUVerb
 
         void DrawUploaderMenu(GameObject obj, DSPUploader uploader)
         {
-            var save = GUI.color;
-            GUI.color = Color.red;
             GUIStyle style = new GUIStyle() { fontSize = 15 };
+            style.normal.textColor = Color.red;
             GUILayout.Label("Current: " + Enum.GetName(typeof(SourceDirectivityPattern), uploader.sourcePattern), style);
-            GUI.color = save;
 
             if (GUILayout.Button("Delete Source"))
             {
@@ -215,6 +226,10 @@ namespace GPUVerb
                     uploader.sourcePattern = pattern;
                 }
             }
+
+            using var _ = new GUILayout.HorizontalScope();
+            GUILayout.Label("Wet Gain Ratio");
+            uploader.WET_GAIN_RATIO = GUILayout.HorizontalSlider(uploader.WET_GAIN_RATIO, 0, 2);
         }
 
         void DrawObjInfoMenu(GameObject obj)
@@ -244,7 +259,7 @@ namespace GPUVerb
             var areaRect = new Rect(position.x, Screen.height - position.y, areaSizeX, areaSizeY);
             GUILayout.BeginArea(areaRect);
             {
-                using var scope = new GUILayout.VerticalScope();
+                using var _ = new GUILayout.VerticalScope();
 
                 if(geom)
                 {
@@ -257,13 +272,18 @@ namespace GPUVerb
             }
             GUILayout.EndArea();
 
-            if(Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.Repaint)
+            {
                 m_usingObjMenu = areaRect.Contains(Event.current.mousePosition);
+            }
         }
+
 
         void OnGUI()
         {
-            using var layout = new GUILayout.VerticalScope(!m_hidden ? "Demo Menu" : "", "window");
+            using var __ = new GUIColorScope(Color.yellow);
+            using var _ = new GUILayout.VerticalScope(!m_hidden ? "Demo Menu" : "", "window");
+
             if (!m_hidden)
             {
                 if (GUILayout.Button("Hide"))
@@ -337,6 +357,12 @@ namespace GPUVerb
                     }
                 }
             }
+
+            if (GUILayout.Button("Quit Application"))
+            {
+                Application.Quit();
+            }
+
             DrawObjInfoMenu(m_curObj);
         }
     }
